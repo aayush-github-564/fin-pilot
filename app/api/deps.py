@@ -1,15 +1,16 @@
-from typing import AsyncGenerator
+import uuid
+from collections.abc import AsyncGenerator
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Path, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import AsyncSessionLocal
 from app.core.security import decode_access_token
-from app.models import User
+from app.models import CompanyMember, User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -37,3 +38,25 @@ async def get_current_user(
         raise credentials_exception
 
     return user
+
+
+async def get_current_company_member(
+    company_id: uuid.UUID = Path(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> CompanyMember:
+    result = await db.execute(
+        select(CompanyMember).where(
+            CompanyMember.company_id == company_id,
+            CompanyMember.user_id == current_user.id,
+        )
+    )
+    membership = result.scalar_one_or_none()
+
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this company",
+        )
+
+    return membership
