@@ -1,6 +1,8 @@
 import uuid
 from datetime import date as date_type
 from decimal import Decimal
+from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -22,3 +24,10 @@ class TransactionRead(BaseModel):
     description: str
     category_id: uuid.UUID
     source: str
+
+
+class TransactionUpdate(BaseModel):
+    date: Optional[date_type] = None
+    amount: Optional[Decimal] = None
+    description: Optional[str] = None
+    category_id: Optional[uuid.UUID] = None

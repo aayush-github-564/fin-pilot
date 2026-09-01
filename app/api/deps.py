@@ -60,3 +60,17 @@ async def get_current_company_member(
         )
 
     return membership
+
+
+def require_role(*allowed_roles: str):
+    async def role_checker(
+        member: CompanyMember = Depends(get_current_company_member),
+    ) -> CompanyMember:
+        if member.role not in allowed_roles:
+            raise HTTPException(
+                status_code=403,
+                detail="You don't have permission to perform this action",
+            )
+        return member
+
+    return role_checker

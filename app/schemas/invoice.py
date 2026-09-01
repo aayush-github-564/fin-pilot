@@ -1,6 +1,8 @@
 import uuid
 from datetime import date as date_type
 from decimal import Decimal
+from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -20,3 +22,10 @@ class InvoiceRead(BaseModel):
     amount: Decimal
     date: date_type
     status: str
+
+
+class InvoiceUpdate(BaseModel):
+    vendor: Optional[str] = None
+    amount: Optional[float] = None
+    date: Optional[date_type] = None
+    status: Optional[str] = None

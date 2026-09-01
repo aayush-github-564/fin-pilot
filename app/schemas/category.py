@@ -1,5 +1,6 @@
 import uuid
 from pydantic import BaseModel, ConfigDict
+from typing import Optional
 
 
 class CategoryCreate(BaseModel):
@@ -14,3 +15,8 @@ class CategoryRead(BaseModel):
     company_id: uuid.UUID
     name: str
     parent_category_id: uuid.UUID | None
+
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    parent_category_id: Optional[uuid.UUID] = None
