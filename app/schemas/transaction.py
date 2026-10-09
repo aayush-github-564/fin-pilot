@@ -10,7 +10,7 @@ class TransactionCreate(BaseModel):
     date: date_type
     amount: Decimal
     description: str
-    category_id: uuid.UUID
+    category_id: Optional[uuid.UUID] = None
     source: str = "manual"
 
 

@@ -38,6 +38,8 @@ services:
     environment:
       REDIS_URL: redis://redis:6379/0
       DATABASE_URL: postgresql+asyncpg://finpilot:finpilot@postgres:5432/finpilot
+    volumes:
+      - ./uploads:/app/uploads
       
 volumes:
   pgdata:

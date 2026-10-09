@@ -1,13 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from arq import ArqRedis
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_company_member, get_db, require_role
+from app.api.deps import get_arq_redis, get_current_company_member, get_db, require_role
 from app.models.company_member import CompanyMember
 from app.models.invoice import Invoice
 from app.schemas.invoice import InvoiceCreate, InvoiceRead, InvoiceUpdate
+from app.services.storage import save_file
 
 router = APIRouter(prefix="/companies/{company_id}/invoices", tags=["invoices"])
 
@@ -34,6 +36,29 @@ async def list_invoices(
 ):
     result = await db.execute(select(Invoice).where(Invoice.company_id == company_id))
     return result.scalars().all()
+
+
+@router.post("/upload", response_model=InvoiceRead, status_code=201)
+async def upload_invoice(
+    company_id: uuid.UUID,
+    file: UploadFile = File(...),
+    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    db: AsyncSession = Depends(get_db),
+    redis: ArqRedis = Depends(get_arq_redis),
+):
+    file_reference = await save_file(file, company_id)
+
+    invoice = Invoice(
+        company_id=company_id,
+        file_reference=file_reference,
+    )
+    db.add(invoice)
+    await db.commit()
+    await db.refresh(invoice)
+
+    await redis.enqueue_job("extract_invoice", str(invoice.id))
+
+    return invoice
 
 
 @router.get("/{invoice_id}", response_model=InvoiceRead)

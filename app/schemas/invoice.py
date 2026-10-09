@@ -18,10 +18,12 @@ class InvoiceRead(BaseModel):
 
     id: uuid.UUID
     company_id: uuid.UUID
-    vendor: str
-    amount: Decimal
-    date: date_type
+    vendor: Optional[str] = None
+    amount: Optional[Decimal] = None
+    date: Optional[date_type] = None
     status: str
+    processing_status: str
+    file_reference: Optional[str] = None
 
 
 class InvoiceUpdate(BaseModel):

@@ -1,9 +1,9 @@
-import uuid
-from datetime import date, datetime
 import enum
+import uuid
+from datetime import date as date_type, datetime
 
-from sqlalchemy import ForeignKey, Numeric, Date, String, Enum, func
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -16,6 +16,13 @@ class InvoiceStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+class ProcessingStatus(str, enum.Enum):
+    pending = "pending"
+    processing = "processing"
+    complete = "complete"
+    failed = "failed"
+
+
 class Invoice(Base):
     __tablename__ = "invoices"
 
@@ -25,11 +32,14 @@ class Invoice(Base):
     company_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False
     )
-    vendor: Mapped[str] = mapped_column(String, nullable=False)
-    amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-    date: Mapped[date] = mapped_column(Date, nullable=False)
+    vendor: Mapped[str | None] = mapped_column(String, nullable=True)
+    amount: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    date: Mapped[date_type | None] = mapped_column(Date, nullable=True)
     status: Mapped[InvoiceStatus] = mapped_column(
         Enum(InvoiceStatus), nullable=False, default=InvoiceStatus.pending
+    )
+    processing_status: Mapped[ProcessingStatus] = mapped_column(
+        Enum(ProcessingStatus), nullable=False, default=ProcessingStatus.pending
     )
     extracted_raw: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     file_reference: Mapped[str | None] = mapped_column(String, nullable=True)

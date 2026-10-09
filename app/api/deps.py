@@ -1,7 +1,8 @@
 import uuid
 from collections.abc import AsyncGenerator
 
-from fastapi import Depends, HTTPException, Path, status
+from arq import ArqRedis
+from fastapi import Depends, HTTPException, Path, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
+
+
+async def get_arq_redis(request: Request) -> ArqRedis:
+    return request.app.state.redis
 
 
 async def get_current_user(

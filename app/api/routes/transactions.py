@@ -13,6 +13,7 @@ from app.schemas.transaction import (
     TransactionRead,
     TransactionUpdate,
 )
+from app.services.categorization import resolve_category_id
 
 router = APIRouter(prefix="/companies/{company_id}/transactions", tags=["transactions"])
 
@@ -24,7 +25,12 @@ async def create_transaction(
     membership: CompanyMember = Depends(get_current_company_member),
     db: AsyncSession = Depends(get_db),
 ):
-    transaction = Transaction(company_id=company_id, **payload.model_dump())
+    data = payload.model_dump()
+
+    if data.get("category_id") is None:
+        data["category_id"] = await resolve_category_id(data["description"], db)
+
+    transaction = Transaction(company_id=company_id, **data)
     db.add(transaction)
     await db.commit()
     await db.refresh(transaction)
