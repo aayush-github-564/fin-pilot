@@ -1,5 +1,6 @@
 import uuid
 from pathlib import Path
+from uuid import UUID
 
 from fastapi import UploadFile
 
@@ -8,7 +9,12 @@ from app.core.config import settings
 UPLOAD_ROOT = Path(settings.upload_dir)
 
 
-async def save_file(upload_file: UploadFile, company_id: int) -> str:
+async def save_file(
+    upload_file: UploadFile,
+    company_id: UUID,
+    *,
+    extension: str | None = None,
+) -> str:
     """
     Saves an uploaded file to local disk and returns a reference string
     to store in the database (Invoice.file_reference).
@@ -21,7 +27,7 @@ async def save_file(upload_file: UploadFile, company_id: int) -> str:
     company_dir = UPLOAD_ROOT / str(company_id)
     company_dir.mkdir(parents=True, exist_ok=True)
 
-    extension = Path(upload_file.filename).suffix
+    extension = extension if extension is not None else Path(upload_file.filename).suffix
     stored_name = f"{uuid.uuid4()}{extension}"
     destination = company_dir / stored_name
 
