@@ -12,11 +12,11 @@
 
 ## Current functional baseline
 
-**Verified:** The repository contains user registration and login, company membership and roles, and company-scoped routes for companies, transactions, invoices, budgets, and categories. It supports invoice extraction, bank-statement CSV ingestion with per-row outcomes and replay-safe persistence, whole-word rule categorization, and an LLM fallback with confidence review, manual acceptance/override, retry handling, and a stale-job sweeper. Category kinds and transaction direction are checked on write. Unit and PostgreSQL API/worker tests cover these paths.
+**Verified:** The repository contains user registration and login, company membership and roles, and company-scoped routes for companies, transactions, invoices, budgets, categories, metrics, and financial Q&A. It supports invoice extraction, bank-statement CSV ingestion with per-row outcomes and replay-safe persistence, whole-word rule categorization, and an LLM fallback with confidence review, manual acceptance/override, retry handling, and a stale-job sweeper. Financial Q&A uses a validated query plan with fixed read-only SQLAlchemy queries; amounts and answer text are produced by application code. Category kinds and transaction direction are checked on write. Unit and PostgreSQL API/worker tests cover these paths.
 
 ## Planned product scope
 
-**Project spec:** Remaining backend work includes constrained financial Q&A, anomaly explanations, and weekly digest generation. The categorization evaluation harness is implemented but has not been run against a real labeled sample. Frontend and deployment are explicitly deferred. Stretch forecasting and recommendations follow Tier 1 and Tier 2.
+**Project spec:** Remaining backend work includes anomaly explanations and weekly digest generation. Constrained financial Q&A is implemented. The categorization evaluation harness is implemented but has not been run against a real labeled sample. Frontend and deployment are explicitly deferred. Stretch forecasting and recommendations follow Tier 1 and Tier 2.
 
 ## Constraints and design principles
 
@@ -31,5 +31,6 @@
 - **Resolved by engineering choice:** Amounts use positive=inflow and negative=outflow; zero is neutral. Financial API inputs use the database's two decimal places and maximum precision.
 - **Resolved for CSV v1:** Common header aliases, signed amount or debit/credit formats, row-level partial failures, a 5 MiB/1,000-row synchronous limit, and company-scoped deduplication using stable bank IDs or exact file hash plus record number. The source file is retained when any rows are imported, with transaction references to their records. Imports assume the company's accounting currency and do not convert FX. Changed exports without a stable bank reference can be imported again.
 - **Resolved for metrics v1:** Cash-flow ranges are inclusive, default to the last 365 days by UTC date, and are limited to 366 dates. Reports support monthly/daily buckets, positive inflows, positive-magnitude outflows, and deterministic average monthly burn. Runway is reported only with an end-date cash balance and positive net burn. Budget-versus-actual is grouped by budgeted category and month.
-- **Open engineering choices:** Categorization confidence calibration from a real labeled sample and Q&A query constraints. These will be defined in their feature milestones and recorded with tests.
+- **Resolved for financial Q&A v1:** The model selects only an enumerated query type and bounded period, with an optional category from the company's expense-category allowlist. Application code validates the plan and runs fixed company-scoped read-only queries; the model receives no transaction rows and generates no SQL or financial facts. Responses are deterministic, audit records retain the question/plan/result, and Redis limits each user to 10 requests per company per minute by default.
+- **Open engineering choice:** Categorization confidence calibration from a real labeled sample remains pending.
 - **Resolved:** Python 3.13 is the supported runtime, matching project metadata and the worker image. The container image build remains unverified.

@@ -7,7 +7,7 @@ Repository facts below were checked against the source and configuration. Histor
 - **API — verified:** FastAPI with Pydantic v2 schemas; routes are mounted under `/api/v1`.
 - **Data — verified:** PostgreSQL-oriented SQLAlchemy models and async sessions, `asyncpg`, and Alembic migrations. The Compose database image is PostgreSQL 16.
 - **Jobs — verified:** Redis and an arq worker. Compose defines PostgreSQL, Redis, and the worker; it does not define an API service.
-- **LLM — verified:** The invoice worker calls Anthropic's `claude-haiku-4-5-20251001` model for document/image extraction.
+- **LLM — verified:** The invoice worker and financial Q&A planner call Anthropic's configurable Haiku-class model. The Q&A planner is configured separately and receives only a question plus allowed expense category names.
 - **Storage — verified:** Uploaded files are written to a local upload directory; the database stores a file reference. The service boundary is intended to make a future storage-backend change local to that service.
 - **Auth — verified:** JWT-based authentication using the configured security dependencies; company memberships carry owner, accountant, or viewer roles.
 
@@ -33,7 +33,16 @@ Repository facts below were checked against the source and configuration. Histor
 - A bank transaction/reference ID, when supplied, is the company-scoped duplicate key. Otherwise the key uses the exact file SHA-256 and record number. This makes exact file retries safe and preserves identical-looking separate purchases; a changed re-export without stable IDs may import the same transactions again.
 - A database unique constraint and `ON CONFLICT DO NOTHING` protect against concurrent retries. Per-row results are `imported`, `duplicate`, or `rejected`; when new rows are imported, the original CSV is retained by the storage service and each transaction's `raw_reference` points to its record. Duplicate-only and all-rejected uploads do not create additional files. Pending rows are enqueued only after commit and enqueue failures leave them recoverable by the existing sweeper.
 
-The `ChatQuery` model exists, but no query agent or chat route was found. Anomaly detection and digest generation were also not found.
+Anomaly detection and digest generation were not found.
+
+### Financial Q&A contract
+
+- `POST /companies/{company_id}/chat/query` requires company membership; viewers can use this read-only route. A Redis counter limits each user to 10 requests per company per minute by default. If Redis is unavailable, the endpoint fails closed.
+- The Anthropic client receives the question and allowed expense category names. A forced `select_financial_query` tool can choose only a fixed query type, period, and optional allowed category name. Extra fields, SQL, invalid categories, or incompatible query/period combinations are rejected.
+- Application code runs bounded, company-scoped SQLAlchemy queries. The supported plans are cash-flow summary, expenses by category, largest expenses, and this/last-month budget versus actual. Category lists and expense results are capped; expense descriptions are truncated to 250 characters.
+- Each query transaction sets a 3-second PostgreSQL statement timeout for its statements. The planner request has a 30-second SDK timeout and SDK retries are disabled.
+- The model receives no transaction rows and does not generate SQL or financial facts. Response answers are formatted deterministically from database results. Unsupported or invalid plans do not execute a financial query.
+- `ChatQuery` records the question, validated plan, result data, executed flag, and error code; `generated_sql` remains null. Audit rows are saved before the model request so provider failures remain recorded. The audit fields and company/created-at index were added by a reviewed migration applied to `finpilot_test` during the test run.
 
 ### Financial metrics contract
 
@@ -47,12 +56,12 @@ The `ChatQuery` model exists, but no query agent or chat route was found. Anomal
 
 ```text
 app/
-  api/routes/       FastAPI auth, company, category, transaction, invoice, budget, and metric routes
+  api/routes/       FastAPI auth, company, category, transaction, invoice, budget, metric, and chat routes
   core/             settings, database, and security setup
   models/           SQLAlchemy entities, including ChatQuery
   schemas/          Pydantic request/response schemas
   scripts/          category seed script
-  services/         local file storage, CSV parsing, cash-flow math, rule-based and LLM categorization, and category-scope validation
+  services/         local file storage, CSV parsing, cash-flow math, financial Q&A planning/querying, rule-based and LLM categorization, and category-scope validation
   worker.py         arq tasks, including invoice extraction
 alembic/            schema migration scripts
 docs/               requirements, architecture, engineering, learning, and handoff docs
@@ -63,14 +72,14 @@ docker-compose.yml  PostgreSQL, Redis, and worker services
 
 - **Verified implementation / Handoff intent:** PostgreSQL is the source of persisted financial records; application code performs extraction parsing and persistence. The handoff's broader rule that LLMs never calculate or write to the database is a project constraint to preserve.
 - **Handoff decision:** arq was selected for asynchronous work; local storage is the current backend, with S3 considered later. The handoff says the API runs natively on Windows while infrastructure and the worker run in Docker. Compose confirms there is no API service, but the actual host runtime was not tested.
-- **Handoff decision:** Future AI features should use company-scoped, restricted data access and deterministic calculations. These features are not yet implemented.
+- **Verified:** Financial Q&A uses a constrained planner and fixed read-only queries. It sends no transaction records to the model; the API formats answers from query results in application code.
 - **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is used by categorization and financial metrics, consistent with the existing expense fixtures and project plan.
 - **Verified:** Financial request schemas reject amounts that exceed the database's two-decimal, 12-digit precision.
 - **Verified:** Categories carry an `income` or `expense` kind. Transactions carry categorization status, provenance, suggestion, and confidence, plus a company-scoped import fingerprint for CSV idempotency. The categorization, CSV fingerprint, and financial-metric index migrations were manually reviewed and their upgrade/downgrade cycles were exercised on `finpilot_test` only.
 - **Verified:** The default categorization threshold is 0.85 and configurable, as are the model and maximum attempts. The manual evaluation harness fixes its precision target at 0.95 and is not run by CI.
 - **Verified:** Pytest unit and PostgreSQL API/worker tests exist. The suite was run against the guarded `finpilot_test` database; no real Anthropic call is made by tests. One warning remains from the installed AnyIO pytest plugin's use of a deprecated pytest alias.
 
-The category/categorization, CSV import fingerprint, and financial metric index migrations were manually reviewed and each was applied, downgraded, and reapplied on `finpilot_test`; application database state is unresolved. No schema migration was added in the preceding baseline-hardening milestone.
+The category/categorization, CSV import fingerprint, and financial metric index migrations were manually reviewed and each was applied, downgraded, and reapplied on `finpilot_test`. The Q&A audit migration was manually reviewed and applied to `finpilot_test` by the test setup. Application database state is unresolved. No schema migration was added in the preceding baseline-hardening milestone.
 
 ## Layer 2 — LLM categorization fallback
 

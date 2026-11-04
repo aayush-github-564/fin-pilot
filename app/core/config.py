@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     categorization_model: str = "claude-haiku-4-5-20251001"
     categorization_confidence_threshold: float = Field(default=0.85, ge=0, le=1)
     categorization_max_tries: int = Field(default=3, ge=1, le=10)
+    financial_qa_model: str = "claude-haiku-4-5-20251001"
+    financial_qa_max_queries_per_minute: int = Field(default=10, ge=1, le=100)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -5,10 +5,12 @@ from uuid import uuid4
 
 from arq import create_pool
 from arq.connections import RedisSettings
+import anthropic
 from fastapi import FastAPI, Request
 
 from app.api.routes.auth import router as auth_router
 from app.api.routes.budgets import router as budgets_router
+from app.api.routes.chat import router as chat_router
 from app.api.routes.categories import router as categories_router
 from app.api.routes.companies import router as companies_router
 from app.api.routes.invoices import router as invoices_router
@@ -27,7 +29,13 @@ async def lifespan(app: FastAPI):
     # for the app's whole life, reused by every request instead of
     # reconnecting each time.
     app.state.redis = await create_pool(RedisSettings.from_dsn(settings.redis_url))
+    app.state.chat_client = anthropic.AsyncAnthropic(
+        api_key=settings.anthropic_api_key,
+        max_retries=0,
+        timeout=30.0,
+    )
     yield
+    await app.state.chat_client.close()
     await app.state.redis.close()
 
 
@@ -42,6 +50,7 @@ app.include_router(transactions_router, prefix=API_V1_PREFIX)
 app.include_router(invoices_router, prefix=API_V1_PREFIX)
 app.include_router(budgets_router, prefix=API_V1_PREFIX)
 app.include_router(metrics_router, prefix=API_V1_PREFIX)
+app.include_router(chat_router, prefix=API_V1_PREFIX)
 
 
 @app.middleware("http")
