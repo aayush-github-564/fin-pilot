@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from sqlalchemy import select
@@ -44,6 +45,7 @@ CATEGORY_RULES: dict[str, str] = {
     "airlines": "Travel",
     "delta air": "Travel",
     "marriott": "Travel",
+    "uber eats": "Food & Dining",
     "hotel": "Travel",
     "uber": "Travel",
     "hertz": "Travel",
@@ -63,6 +65,10 @@ CATEGORY_RULES: dict[str, str] = {
     "starbucks": "Food & Dining",
 }
 
+_ORDERED_RULES = sorted(
+    CATEGORY_RULES.items(), key=lambda item: len(item[0]), reverse=True
+)
+
 
 def match_category(description: str | None) -> str | None:
     """
@@ -73,9 +79,10 @@ def match_category(description: str | None) -> str | None:
     if not description:
         return None
 
-    text = description.lower()
-    for keyword, category_name in CATEGORY_RULES.items():
-        if keyword in text:
+    text = description.casefold()
+    for keyword, category_name in _ORDERED_RULES:
+        pattern = rf"(?<!\w){re.escape(keyword.casefold())}(?!\w)"
+        if re.search(pattern, text):
             return category_name
 
     return None

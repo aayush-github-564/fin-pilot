@@ -18,7 +18,7 @@ router = APIRouter(prefix="/companies/{company_id}/invoices", tags=["invoices"])
 async def create_invoice(
     company_id: uuid.UUID,
     payload: InvoiceCreate,
-    membership: CompanyMember = Depends(get_current_company_member),
+    membership: CompanyMember = Depends(require_role("owner", "accountant")),
     db: AsyncSession = Depends(get_db),
 ):
     invoice = Invoice(company_id=company_id, **payload.model_dump())

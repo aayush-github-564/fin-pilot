@@ -12,7 +12,7 @@ class CategoryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    company_id: uuid.UUID
+    company_id: uuid.UUID | None
     name: str
     parent_category_id: uuid.UUID | None
 

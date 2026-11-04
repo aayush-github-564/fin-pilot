@@ -6,18 +6,17 @@ This log records milestones and outstanding engineering work, not a file-by-file
 
 - **Verified — Git history:** The project progressed from a FastAPI health-check skeleton through database models/migrations, authentication, company membership, and company-scoped CRUD routes. Later commits added the Redis/arq worker foundation and Redis configuration. Commit `4677b2c` adds invoice upload/extraction support, local file storage, rule-based categorization, category seeding, and invoice processing-status/nullable-field migrations.
 - **Verified — current source:** Invoice upload and extraction, local file storage, rule-based categorization, category seeding, and invoice processing-status/nullable-field migration scripts are present in the committed source.
+- **Current task — baseline hardening (uncommitted):** Write roles are aligned, category references are tenant-checked, global categories are readable, category seeding is idempotent, rule matching uses whole words and longest matches, invoice output validation avoids partial persistence, and financial amounts are constrained to database precision. The worker image now uses Python 3.13. Added unit and API regression tests; latest run: 35 passed against `finpilot_test`.
 - **Handoff — historical verification:** The handoff reports one successful Claude extraction using a sample PDF and one successful rule-categorization example. Those live checks were not repeated during repository inspection.
 
 ## Current state and outstanding issues
 
-- **Verified:** Manual create routes for invoices, transactions, budgets, and categories require company membership but do not consistently require an owner/accountant role. The invoice upload route does require that role. Align the create-route policy with the intended viewer permissions.
-- **Verified:** Invoice extraction parses amount and ISO-formatted date values, but missing fields can still result in `complete`. An exception after assigning some fields can persist partial extracted values while marking the invoice `failed`.
-- **Verified:** `pyproject.toml` requires Python `>=3.13`, but the worker Dockerfile uses Python 3.12. Resolve this mismatch before relying on worker-container runs.
-- **Verified:** The category seed script inserts defaults without checking for existing rows, so rerunning it can create duplicates.
-- **Verified absence in this repository:** No test suite, CI configuration, CSV ingestion, dashboard, LLM categorization fallback, AI query/anomaly/digest feature, or frontend was found.
-- **Open:** Migration files are present, but database application state is unknown. Live service behavior, historical duplicate cleanup, and whether any API key was committed were not established by this inspection.
-- **Git state at inspection:** The branch is `main`, up to date with `origin/main`. The implementation is committed; the `docs/` directory is untracked and contains the handoff and documentation files.
+- **Resolved in current task:** Financial create routes require owner/accountant roles; category IDs and parent IDs cannot cross company boundaries; amounts are validated before reaching PostgreSQL; category seeds avoid duplicates on sequential reruns; malformed extraction output is rejected before field mutation.
+- **Open:** Invoice processing has no distinct `needs_review` status for partial extraction; missing extracted fields are logged and left available for manual editing.
+- **Verified absence in this repository:** CSV ingestion, dashboard aggregates, LLM categorization fallback, financial Q&A, anomaly detection, and weekly digest generation remain unimplemented. Frontend and deployment are excluded from this task.
+- **Open:** Application database migration state is unknown. Test runs use the guarded `finpilot_test` database. No new migration has been introduced in this task yet.
+- **Test warning:** The installed AnyIO pytest plugin uses a deprecated pytest alias; this is dependency-side and does not fail the suite.
 
 ## Recommended next engineering task
 
-First align write authorization across company resource creation routes with the intended owner/accountant/viewer policy. Then resolve the Python-version mismatch before validating the worker runtime. The handoff's next planned feature is the LLM categorization fallback; it remains unimplemented and should follow these readiness issues. Review migrations manually before any future application, as directed by the handoff.
+Next implement the documented Layer 2 categorization flow, including a manually reviewed schema migration, constrained LLM contract, atomic conditional update, review endpoints, and safety tests. The human authorized creating/reviewing migrations and applying them only to the guarded `*_test` database. Preserve the chosen amount-sign convention and do not run real LLM calls in CI.

@@ -3,15 +3,17 @@ from datetime import date as date_type
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.models.transaction import TransactionSource
 
 
 class TransactionCreate(BaseModel):
     date: date_type
-    amount: Decimal
-    description: str
+    amount: Decimal = Field(max_digits=12, decimal_places=2)
+    description: Optional[str]
     category_id: Optional[uuid.UUID] = None
-    source: str = "manual"
+    source: TransactionSource = TransactionSource.manual
 
 
 class TransactionRead(BaseModel):
@@ -21,13 +23,13 @@ class TransactionRead(BaseModel):
     company_id: uuid.UUID
     date: date_type
     amount: Decimal
-    description: str
-    category_id: uuid.UUID
-    source: str
+    description: Optional[str]
+    category_id: Optional[uuid.UUID] = None
+    source: TransactionSource
 
 
 class TransactionUpdate(BaseModel):
     date: Optional[date_type] = None
-    amount: Optional[Decimal] = None
+    amount: Optional[Decimal] = Field(default=None, max_digits=12, decimal_places=2)
     description: Optional[str] = None
     category_id: Optional[uuid.UUID] = None
