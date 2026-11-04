@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import date as date_type, datetime
+from decimal import Decimal
 
 from sqlalchemy import Date, Enum, ForeignKey, Numeric, String, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -33,7 +34,7 @@ class Invoice(Base):
         UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False
     )
     vendor: Mapped[str | None] = mapped_column(String, nullable=True)
-    amount: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     date: Mapped[date_type | None] = mapped_column(Date, nullable=True)
     status: Mapped[InvoiceStatus] = mapped_column(
         Enum(InvoiceStatus), nullable=False, default=InvoiceStatus.pending

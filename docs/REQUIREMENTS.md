@@ -12,11 +12,11 @@
 
 ## Current functional baseline
 
-**Verified:** The repository contains user registration and login, company membership and roles, and company-scoped routes for companies, transactions, invoices, budgets, and categories. It supports local invoice upload with asynchronous extraction work and whole-word, longest-match rule categorization. Create and update paths validate company-owned category references, and financial writes require owner or accountant roles. Unit and PostgreSQL API tests cover these baseline behaviors.
+**Verified:** The repository contains user registration and login, company membership and roles, and company-scoped routes for companies, transactions, invoices, budgets, and categories. It supports invoice extraction, whole-word rule categorization, and an LLM fallback with confidence review, manual acceptance/override, retry handling, and a stale-job sweeper. Category kinds and transaction direction are checked on write. Unit and PostgreSQL API/worker tests cover these paths.
 
 ## Planned product scope
 
-**Project spec:** Remaining backend work includes bank-statement CSV ingestion with per-row outcomes; an LLM fallback for unmatched transaction categorization with review for uncertain results; deterministic financial aggregates; constrained financial Q&A; anomaly explanations; and weekly digests. Frontend and deployment are explicitly deferred. Stretch forecasting and recommendations follow Tier 1 and Tier 2.
+**Project spec:** Remaining backend work includes bank-statement CSV ingestion with per-row outcomes; deterministic financial aggregates; constrained financial Q&A; anomaly explanations; and weekly digest generation. The categorization evaluation harness is implemented but has not been run against a real labeled sample. Frontend and deployment are explicitly deferred. Stretch forecasting and recommendations follow Tier 1 and Tier 2.
 
 ## Constraints and design principles
 
@@ -29,5 +29,5 @@
 
 - **Resolved:** `viewer` is read-only; owners and accountants may create or update financial resources.
 - **Resolved by engineering choice:** Amounts use positive=inflow and negative=outflow; zero is neutral. Financial API inputs use the database's two decimal places and maximum precision.
-- **Open engineering choices:** CSV header mapping, duplicate policy, and partial-row reporting; initial metrics and time boundaries; categorization confidence calibration; and Q&A query constraints. These will be defined in their feature milestones and recorded with tests.
+- **Open engineering choices:** CSV header mapping, duplicate policy, and partial-row reporting; initial metrics and time boundaries; categorization confidence calibration from a real labeled sample; and Q&A query constraints. These will be defined in their feature milestones and recorded with tests.
 - **Resolved:** Python 3.13 is the supported runtime, matching project metadata and the worker image. The container image build remains unverified.

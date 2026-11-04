@@ -1,10 +1,11 @@
 import re
 import uuid
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.category import Category
+from app.models.category import Category, CategoryKind
 
 
 CATEGORY_RULES: dict[str, str] = {
@@ -70,13 +71,17 @@ _ORDERED_RULES = sorted(
 )
 
 
-def match_category(description: str | None) -> str | None:
+def match_category(
+    description: str | None, category_kind: CategoryKind | None = None
+) -> str | None:
     """
     Attempts to match a transaction description against known keyword
     rules. Returns the matched category name, or None if nothing matches
     (meaning this transaction is a candidate for the LLM fallback later).
     """
     if not description:
+        return None
+    if category_kind == CategoryKind.income:
         return None
 
     text = description.casefold()
@@ -88,8 +93,19 @@ def match_category(description: str | None) -> str | None:
     return None
 
 
+def category_kind_for_amount(amount: Decimal) -> CategoryKind | None:
+    """Return direction for signed amounts; zero has no financial direction."""
+    if amount > 0:
+        return CategoryKind.income
+    if amount < 0:
+        return CategoryKind.expense
+    return None
+
+
 async def resolve_category_id(
-    description: str | None, db: AsyncSession
+    description: str | None,
+    db: AsyncSession,
+    category_kind: CategoryKind | None = CategoryKind.expense,
 ) -> "uuid.UUID | None":
     """
     Runs rule-based matching on a description, then looks up the
@@ -97,14 +113,22 @@ async def resolve_category_id(
     Returns None if no rule matched (candidate for LLM fallback later)
     or if the matched category name somehow isn't seeded yet.
     """
-    category_name = match_category(description)
+    if category_kind is None:
+        return None
+
+    category_name = match_category(description, category_kind)
     if category_name is None:
         return None
 
     result = await db.execute(
-        select(Category).where(
-            Category.name == category_name, Category.company_id.is_(None)
+        select(Category)
+        .where(
+            Category.name == category_name,
+            Category.company_id.is_(None),
+            Category.kind == category_kind,
         )
+        .order_by(Category.id)
+        .limit(1)
     )
     category = result.scalar_one_or_none()
     return category.id if category else None

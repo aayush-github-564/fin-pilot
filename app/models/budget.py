@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import ForeignKey, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -21,5 +22,5 @@ class Budget(Base):
         UUID(as_uuid=True), ForeignKey("categories.id"), nullable=False
     )
     period: Mapped[str] = mapped_column(String, nullable=False)
-    limit_amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    limit_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

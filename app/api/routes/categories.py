@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_company_member, get_db, require_role
 from app.models.category import Category
 from app.models.company_member import CompanyMember
+from app.models.transaction import Transaction
 from app.schemas.category import (
     CategoryCreate,
     CategoryRead,
@@ -25,7 +26,9 @@ async def create_category(
     db: AsyncSession = Depends(get_db),
 ):
     if payload.parent_category_id is not None:
-        await validate_category_scope(db, company_id, payload.parent_category_id)
+        await validate_category_scope(
+            db, company_id, payload.parent_category_id, expected_kind=payload.kind
+        )
     category = Category(company_id=company_id, **payload.model_dump())
     db.add(category)
     await db.commit()
@@ -83,13 +86,55 @@ async def update_category(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        if field == "parent_category_id" and value is not None:
-            if value == category.id:
-                raise HTTPException(
-                    status_code=422, detail="A category cannot be its own parent"
-                )
-            await validate_category_scope(db, company_id, value)
+    changes = payload.model_dump(exclude_unset=True)
+    if any(field in changes and changes[field] is None for field in ("name", "kind")):
+        raise HTTPException(status_code=422, detail="Category name and kind cannot be null")
+    parent_id = changes.get("parent_category_id", category.parent_category_id)
+    kind = changes.get("kind", category.kind)
+    if kind != category.kind:
+        mismatched_amount = (
+            Transaction.amount < 0 if kind.value == "income" else Transaction.amount > 0
+        )
+        linked_transaction_id = await db.scalar(
+            select(Transaction.id)
+            .where(
+                Transaction.company_id == company_id,
+                or_(
+                    Transaction.category_id == category.id,
+                    Transaction.suggested_category_id == category.id,
+                ),
+                mismatched_amount,
+            )
+            .limit(1)
+        )
+        if linked_transaction_id is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="Category kind conflicts with linked transaction directions",
+            )
+        mismatched_child_id = await db.scalar(
+            select(Category.id)
+            .where(
+                Category.parent_category_id == category.id,
+                Category.kind != kind,
+            )
+            .limit(1)
+        )
+        if mismatched_child_id is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="Category kind conflicts with a child category",
+            )
+    if parent_id is not None:
+        if parent_id == category.id:
+            raise HTTPException(
+                status_code=422, detail="A category cannot be its own parent"
+            )
+        await validate_category_scope(
+            db, company_id, parent_id, expected_kind=kind
+        )
+
+    for field, value in changes.items():
         setattr(category, field, value)
 
     await db.commit()

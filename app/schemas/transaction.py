@@ -5,7 +5,11 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.transaction import TransactionSource
+from app.models.transaction import (
+    CategorizationSource,
+    CategorizationStatus,
+    TransactionSource,
+)
 
 
 class TransactionCreate(BaseModel):
@@ -26,6 +30,10 @@ class TransactionRead(BaseModel):
     description: Optional[str]
     category_id: Optional[uuid.UUID] = None
     source: TransactionSource
+    categorization_status: CategorizationStatus
+    categorization_source: CategorizationSource | None
+    suggested_category_id: uuid.UUID | None
+    suggestion_confidence: Decimal | None
 
 
 class TransactionUpdate(BaseModel):
