@@ -23,6 +23,7 @@ Repository facts below were checked against the source and configuration. Histor
 6. Owners and accountants can accept a review suggestion or override a category. Viewers can read the review queue. Manual changes set `user` source; accepted suggestions retain `llm_confirmed` source.
 7. Transaction, invoice, budget, and category creation plus invoice upload and CSV import require owner or accountant membership. Category references on transactions and budgets, and parent-category references, are restricted to global or same-company categories. Category reads include global defaults.
 8. Bank statement CSVs are parsed synchronously at `POST /transactions/import-csv` with a 5 MiB and 1,000-row limit so the response can report each row. Valid rows use the existing rule categorizer, then commit before pending rows are queued for LLM categorization. Invalid rows are reported independently; malformed files are rejected before any writes.
+9. Read-only cash-flow and budget-versus-actual endpoints use company-scoped SQL aggregation. Cash-flow reporting supports daily/monthly buckets, fills empty periods, and uses bounded inclusive date ranges. Runway is calculated only when a caller supplies a cash balance for the range end.
 
 ### CSV ingestion contract
 
@@ -32,18 +33,26 @@ Repository facts below were checked against the source and configuration. Histor
 - A bank transaction/reference ID, when supplied, is the company-scoped duplicate key. Otherwise the key uses the exact file SHA-256 and record number. This makes exact file retries safe and preserves identical-looking separate purchases; a changed re-export without stable IDs may import the same transactions again.
 - A database unique constraint and `ON CONFLICT DO NOTHING` protect against concurrent retries. Per-row results are `imported`, `duplicate`, or `rejected`; when new rows are imported, the original CSV is retained by the storage service and each transaction's `raw_reference` points to its record. Duplicate-only and all-rejected uploads do not create additional files. Pending rows are enqueued only after commit and enqueue failures leave them recoverable by the existing sweeper.
 
-The `ChatQuery` model exists, but no query agent or chat route was found. Dashboard aggregation, anomaly detection, and digest generation were also not found.
+The `ChatQuery` model exists, but no query agent or chat route was found. Anomaly detection and digest generation were also not found.
+
+### Financial metrics contract
+
+- `GET /companies/{company_id}/metrics/cash-flow` defaults to a rolling 365-day window ending on the current UTC date. `start_date` and `end_date` are inclusive, and the range may contain at most 366 dates. Buckets are monthly by default, with daily granularity available; empty buckets contain zero totals.
+- Inflows are positive amounts, outflows are reported as positive magnitudes, and net cash flow is inflows minus outflows. Average monthly outflow and net burn scale the selected range to an average calendar month of 30.436875 days. Negative net burn means the company generated cash during that range.
+- Runway is `cash_balance / positive average monthly net burn`, rounded to two decimals. The cash balance is optional and represents the company's balance as of `end_date`. Runway is unavailable without a supplied balance or when there is no positive net burn; the response includes the reason.
+- `GET /companies/{company_id}/metrics/budget-vs-actual?period=YYYY-MM` returns each budgeted category for that month. Expense actuals sum the absolute value of negative transactions; income actuals sum positive transactions. Only transactions assigned to a budgeted category are included. Duplicate budget rows for one category/month are combined.
+- Aggregate queries run in PostgreSQL with `(company_id, date)` and `(company_id, period)` indexes. Redis caching is deferred in v1 to keep successful writes immediately reflected; add caching only with measured need and a reliable freshness/invalidation design.
 
 ## Repository structure
 
 ```text
 app/
-  api/routes/       FastAPI auth, company, category, transaction, invoice, budget routes
+  api/routes/       FastAPI auth, company, category, transaction, invoice, budget, and metric routes
   core/             settings, database, and security setup
   models/           SQLAlchemy entities, including ChatQuery
   schemas/          Pydantic request/response schemas
   scripts/          category seed script
-  services/         local file storage, CSV parsing, rule-based and LLM categorization, and category-scope validation
+  services/         local file storage, CSV parsing, cash-flow math, rule-based and LLM categorization, and category-scope validation
   worker.py         arq tasks, including invoice extraction
 alembic/            schema migration scripts
 docs/               requirements, architecture, engineering, learning, and handoff docs
@@ -55,13 +64,13 @@ docker-compose.yml  PostgreSQL, Redis, and worker services
 - **Verified implementation / Handoff intent:** PostgreSQL is the source of persisted financial records; application code performs extraction parsing and persistence. The handoff's broader rule that LLMs never calculate or write to the database is a project constraint to preserve.
 - **Handoff decision:** arq was selected for asynchronous work; local storage is the current backend, with S3 considered later. The handoff says the API runs natively on Windows while infrastructure and the worker run in Docker. Compose confirms there is no API service, but the actual host runtime was not tested.
 - **Handoff decision:** Future AI features should use company-scoped, restricted data access and deterministic calculations. These features are not yet implemented.
-- **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is used by categorization and will be used by financial aggregates, consistent with the existing expense fixtures and project plan.
+- **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is used by categorization and financial metrics, consistent with the existing expense fixtures and project plan.
 - **Verified:** Financial request schemas reject amounts that exceed the database's two-decimal, 12-digit precision.
-- **Verified:** Categories carry an `income` or `expense` kind. Transactions carry categorization status, provenance, suggestion, and confidence, plus a company-scoped import fingerprint for CSV idempotency. Both the categorization and CSV fingerprint migrations were manually reviewed and their upgrade/downgrade cycles were exercised on `finpilot_test` only.
+- **Verified:** Categories carry an `income` or `expense` kind. Transactions carry categorization status, provenance, suggestion, and confidence, plus a company-scoped import fingerprint for CSV idempotency. The categorization, CSV fingerprint, and financial-metric index migrations were manually reviewed and their upgrade/downgrade cycles were exercised on `finpilot_test` only.
 - **Verified:** The default categorization threshold is 0.85 and configurable, as are the model and maximum attempts. The manual evaluation harness fixes its precision target at 0.95 and is not run by CI.
 - **Verified:** Pytest unit and PostgreSQL API/worker tests exist. The suite was run against the guarded `finpilot_test` database; no real Anthropic call is made by tests. One warning remains from the installed AnyIO pytest plugin's use of a deprecated pytest alias.
 
-The category/categorization and CSV import fingerprint migrations were manually reviewed and each was applied, downgraded, and reapplied on `finpilot_test`; application database state is unresolved. No schema migration was added in the preceding baseline-hardening milestone.
+The category/categorization, CSV import fingerprint, and financial metric index migrations were manually reviewed and each was applied, downgraded, and reapplied on `finpilot_test`; application database state is unresolved. No schema migration was added in the preceding baseline-hardening milestone.
 
 ## Layer 2 — LLM categorization fallback
 

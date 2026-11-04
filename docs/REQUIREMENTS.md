@@ -8,7 +8,7 @@
 
 ## Product direction
 
-**Project spec:** FinPilot is a multi-tenant financial operations app for small businesses. The remaining backend scope includes deterministic cash-flow metrics, constrained financial Q&A, anomaly explanations, and weekly digests. Frontend and deployment work are excluded from the current completion task.
+**Project spec:** FinPilot is a multi-tenant financial operations app for small businesses. The remaining backend scope includes constrained financial Q&A, anomaly explanations, and weekly digests. Frontend and deployment work are excluded from the current completion task.
 
 ## Current functional baseline
 
@@ -16,7 +16,7 @@
 
 ## Planned product scope
 
-**Project spec:** Remaining backend work includes deterministic financial aggregates; constrained financial Q&A; anomaly explanations; and weekly digest generation. The categorization evaluation harness is implemented but has not been run against a real labeled sample. Frontend and deployment are explicitly deferred. Stretch forecasting and recommendations follow Tier 1 and Tier 2.
+**Project spec:** Remaining backend work includes constrained financial Q&A, anomaly explanations, and weekly digest generation. The categorization evaluation harness is implemented but has not been run against a real labeled sample. Frontend and deployment are explicitly deferred. Stretch forecasting and recommendations follow Tier 1 and Tier 2.
 
 ## Constraints and design principles
 
@@ -30,5 +30,6 @@
 - **Resolved:** `viewer` is read-only; owners and accountants may create or update financial resources.
 - **Resolved by engineering choice:** Amounts use positive=inflow and negative=outflow; zero is neutral. Financial API inputs use the database's two decimal places and maximum precision.
 - **Resolved for CSV v1:** Common header aliases, signed amount or debit/credit formats, row-level partial failures, a 5 MiB/1,000-row synchronous limit, and company-scoped deduplication using stable bank IDs or exact file hash plus record number. The source file is retained when any rows are imported, with transaction references to their records. Imports assume the company's accounting currency and do not convert FX. Changed exports without a stable bank reference can be imported again.
-- **Open engineering choices:** Initial metrics and time boundaries, categorization confidence calibration from a real labeled sample, and Q&A query constraints. These will be defined in their feature milestones and recorded with tests.
+- **Resolved for metrics v1:** Cash-flow ranges are inclusive, default to the last 365 days by UTC date, and are limited to 366 dates. Reports support monthly/daily buckets, positive inflows, positive-magnitude outflows, and deterministic average monthly burn. Runway is reported only with an end-date cash balance and positive net burn. Budget-versus-actual is grouped by budgeted category and month.
+- **Open engineering choices:** Categorization confidence calibration from a real labeled sample and Q&A query constraints. These will be defined in their feature milestones and recorded with tests.
 - **Resolved:** Python 3.13 is the supported runtime, matching project metadata and the worker image. The container image build remains unverified.

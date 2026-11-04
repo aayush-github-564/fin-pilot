@@ -52,6 +52,7 @@ class Transaction(Base):
             "company_id",
             "categorization_status",
         ),
+        Index("ix_transactions_company_date", "company_id", "date"),
         UniqueConstraint(
             "company_id",
             "import_fingerprint",

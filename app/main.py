@@ -12,6 +12,7 @@ from app.api.routes.budgets import router as budgets_router
 from app.api.routes.categories import router as categories_router
 from app.api.routes.companies import router as companies_router
 from app.api.routes.invoices import router as invoices_router
+from app.api.routes.metrics import router as metrics_router
 from app.api.routes.transactions import router as transactions_router
 from app.core.config import settings
 from app.core.logging import configure_logging
@@ -40,6 +41,7 @@ app.include_router(categories_router, prefix=API_V1_PREFIX)
 app.include_router(transactions_router, prefix=API_V1_PREFIX)
 app.include_router(invoices_router, prefix=API_V1_PREFIX)
 app.include_router(budgets_router, prefix=API_V1_PREFIX)
+app.include_router(metrics_router, prefix=API_V1_PREFIX)
 
 
 @app.middleware("http")
