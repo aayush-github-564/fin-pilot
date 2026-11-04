@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_company_member, get_db, require_role
@@ -12,6 +12,7 @@ from app.schemas.category import (
     CategoryRead,
     CategoryUpdate,
 )
+from app.services.category_scope import validate_category_scope
 
 router = APIRouter(prefix="/companies/{company_id}/categories", tags=["categories"])
 
@@ -20,9 +21,11 @@ router = APIRouter(prefix="/companies/{company_id}/categories", tags=["categorie
 async def create_category(
     company_id: uuid.UUID,
     payload: CategoryCreate,
-    membership: CompanyMember = Depends(get_current_company_member),
+    membership: CompanyMember = Depends(require_role("owner", "accountant")),
     db: AsyncSession = Depends(get_db),
 ):
+    if payload.parent_category_id is not None:
+        await validate_category_scope(db, company_id, payload.parent_category_id)
     category = Category(company_id=company_id, **payload.model_dump())
     db.add(category)
     await db.commit()
@@ -36,7 +39,11 @@ async def list_categories(
     membership: CompanyMember = Depends(get_current_company_member),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Category).where(Category.company_id == company_id))
+    result = await db.execute(
+        select(Category).where(
+            or_(Category.company_id == company_id, Category.company_id.is_(None))
+        )
+    )
     return result.scalars().all()
 
 
@@ -49,7 +56,8 @@ async def get_category(
 ):
     result = await db.execute(
         select(Category).where(
-            Category.id == category_id, Category.company_id == company_id
+            Category.id == category_id,
+            or_(Category.company_id == company_id, Category.company_id.is_(None)),
         )
     )
     category = result.scalar_one_or_none()
@@ -76,6 +84,12 @@ async def update_category(
         raise HTTPException(status_code=404, detail="Category not found")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
+        if field == "parent_category_id" and value is not None:
+            if value == category.id:
+                raise HTTPException(
+                    status_code=422, detail="A category cannot be its own parent"
+                )
+            await validate_category_scope(db, company_id, value)
         setattr(category, field, value)
 
     await db.commit()

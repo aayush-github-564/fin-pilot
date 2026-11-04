@@ -33,14 +33,13 @@ class CompanyUpdate(BaseModel):
 
 class MemberInvite(BaseModel):
     email: EmailStr
-    role: str  # "owner" | "accountant" | "viewer"
+    role: CompanyRole
 
 
 class MemberOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     user_id: UUID
     company_id: UUID
-    role: str
-
-    class Config:
-        from_attributes = True
+    role: CompanyRole

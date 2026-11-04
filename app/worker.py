@@ -36,13 +36,55 @@ If a field cannot be confidently determined from the image, use null for that fi
 
 
 def _clean_json_response(raw_text: str) -> dict:
-    """Claude is instructed to return raw JSON, but occasionally wraps it in
-    markdown code fences anyway. Strip those defensively before parsing."""
+    """Parse a JSON object, allowing a single optional Markdown code fence."""
     text = raw_text.strip()
-    if text.startswith("```"):
-        text = text.strip("`")
-        text = text.replace("json", "", 1).strip()
-    return json.loads(text)
+    lines = text.splitlines()
+    if lines and lines[0].strip().startswith("```"):
+        if len(lines) < 3 or lines[-1].strip() != "```":
+            raise ValueError("Malformed JSON code fence")
+        fence_language = lines[0].strip()[3:].strip().casefold()
+        if fence_language not in {"", "json"}:
+            raise ValueError("Unexpected code fence language")
+        text = "\n".join(lines[1:-1]).strip()
+
+    parsed = json.loads(text)
+    if not isinstance(parsed, dict):
+        raise ValueError("Invoice extraction must be a JSON object")
+    return parsed
+
+
+def _parse_invoice_fields(
+    extracted: dict,
+) -> tuple[str | None, Decimal | None, datetime.date | None]:
+    vendor_raw = extracted.get("vendor")
+    if vendor_raw is not None and not isinstance(vendor_raw, str):
+        raise ValueError("Extracted vendor must be a string or null")
+    vendor = (vendor_raw.strip() or None) if vendor_raw is not None else None
+
+    amount_raw = extracted.get("amount")
+    if isinstance(amount_raw, bool) or (
+        amount_raw is not None and not isinstance(amount_raw, (int, float, Decimal))
+    ):
+        raise ValueError("Extracted amount must be numeric or null")
+    amount = Decimal(str(amount_raw)) if amount_raw is not None else None
+    if amount is not None and not amount.is_finite():
+        raise ValueError("Extracted amount must be finite")
+    if amount is not None:
+        cents = amount.quantize(Decimal("0.01"))
+        if cents != amount or abs(amount) > Decimal("9999999999.99"):
+            raise ValueError(
+                "Extracted amount exceeds the supported currency precision"
+            )
+
+    date_raw = extracted.get("date")
+    if date_raw is not None and not isinstance(date_raw, str):
+        raise ValueError("Extracted date must be an ISO date string or null")
+    invoice_date = (
+        datetime.datetime.strptime(date_raw, "%Y-%m-%d").date()
+        if date_raw is not None
+        else None
+    )
+    return vendor, amount, invoice_date
 
 
 async def extract_invoice(ctx, invoice_id: str):
@@ -96,28 +138,62 @@ async def extract_invoice(ctx, invoice_id: str):
                 ],
             )
 
-            extracted = _clean_json_response(response.content[0].text)
+            text_blocks = [
+                block.text
+                for block in response.content
+                if getattr(block, "type", None) == "text"
+                and isinstance(getattr(block, "text", None), str)
+            ]
+            if not text_blocks:
+                raise ValueError("Extraction model returned no text response")
+
+            extracted = _clean_json_response(text_blocks[0])
+            vendor, amount, invoice_date = _parse_invoice_fields(extracted)
             invoice.extracted_raw = extracted
 
-            if extracted.get("vendor"):
-                invoice.vendor = extracted["vendor"]
-            if extracted.get("amount") is not None:
-                invoice.amount = Decimal(str(extracted["amount"]))
-            if extracted.get("date"):
-                invoice.date = (
-                    datetime.datetime.strptime(extracted["date"], "%Y-%m-%d")
-                    .replace(tzinfo=datetime.UTC)
-                    .date()
-                )
+            if vendor is not None:
+                invoice.vendor = vendor
+            if amount is not None:
+                invoice.amount = amount
+            if invoice_date is not None:
+                invoice.date = invoice_date
 
             invoice.processing_status = ProcessingStatus.complete
             await db.commit()
-            logger.info(f"extract_invoice: invoice {invoice_id} completed")
+            missing_fields = [
+                name
+                for name, value in (
+                    ("vendor", vendor),
+                    ("amount", amount),
+                    ("date", invoice_date),
+                )
+                if value is None
+            ]
+            if missing_fields:
+                logger.warning(
+                    "Invoice extraction completed with missing fields",
+                    extra={"invoice_id": invoice_id, "missing_fields": missing_fields},
+                )
+            else:
+                logger.info(
+                    "Invoice extraction completed", extra={"invoice_id": invoice_id}
+                )
 
         except Exception:
-            logger.exception(f"extract_invoice: failed for invoice {invoice_id}")
-            invoice.processing_status = ProcessingStatus.failed
-            await db.commit()
+            logger.exception(
+                "Invoice extraction failed", extra={"invoice_id": invoice_id}
+            )
+            await db.rollback()
+            try:
+                invoice = await db.get(Invoice, UUID(invoice_id))
+                if invoice is not None:
+                    invoice.processing_status = ProcessingStatus.failed
+                    await db.commit()
+            except Exception:
+                logger.exception(
+                    "Could not persist invoice extraction failure",
+                    extra={"invoice_id": invoice_id},
+                )
 
 
 async def sample_task(ctx, message: str):

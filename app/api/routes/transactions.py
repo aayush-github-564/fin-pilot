@@ -14,6 +14,7 @@ from app.schemas.transaction import (
     TransactionUpdate,
 )
 from app.services.categorization import resolve_category_id
+from app.services.category_scope import validate_category_scope
 
 router = APIRouter(prefix="/companies/{company_id}/transactions", tags=["transactions"])
 
@@ -22,11 +23,13 @@ router = APIRouter(prefix="/companies/{company_id}/transactions", tags=["transac
 async def create_transaction(
     company_id: uuid.UUID,
     payload: TransactionCreate,
-    membership: CompanyMember = Depends(get_current_company_member),
+    membership: CompanyMember = Depends(require_role("owner", "accountant")),
     db: AsyncSession = Depends(get_db),
 ):
     data = payload.model_dump()
 
+    if data.get("category_id") is not None:
+        await validate_category_scope(db, company_id, data["category_id"])
     if data.get("category_id") is None:
         data["category_id"] = await resolve_category_id(data["description"], db)
 
@@ -85,6 +88,8 @@ async def update_transaction(
         raise HTTPException(status_code=404, detail="Transaction not found")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
+        if field == "category_id" and value is not None:
+            await validate_category_scope(db, company_id, value)
         setattr(transaction, field, value)
 
     await db.commit()

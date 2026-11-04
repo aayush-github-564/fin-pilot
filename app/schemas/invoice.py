@@ -3,12 +3,12 @@ from datetime import date as date_type
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class InvoiceCreate(BaseModel):
     vendor: str
-    amount: Decimal
+    amount: Decimal = Field(max_digits=12, decimal_places=2)
     date: date_type
     status: str = "pending"
 
@@ -28,6 +28,6 @@ class InvoiceRead(BaseModel):
 
 class InvoiceUpdate(BaseModel):
     vendor: Optional[str] = None
-    amount: Optional[float] = None
+    amount: Optional[Decimal] = Field(default=None, max_digits=12, decimal_places=2)
     date: Optional[date_type] = None
     status: Optional[str] = None

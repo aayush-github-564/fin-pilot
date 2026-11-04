@@ -11,14 +11,15 @@ Repository facts below were checked against the source and configuration. Histor
 - **Storage — verified:** Uploaded files are written to a local upload directory; the database stores a file reference. The service boundary is intended to make a future storage-backend change local to that service.
 - **Auth — verified:** JWT-based authentication using the configured security dependencies; company memberships carry owner, accountant, or viewer roles.
 
-**Configuration concern:** `pyproject.toml` requires Python `>=3.13`, while the worker Dockerfile starts from Python `3.12-slim`. Container build/runtime compatibility has not been verified.
+**Runtime alignment — verified:** `pyproject.toml` requires Python `>=3.13`, and the worker Dockerfile now uses Python 3.13. A Docker image build has not yet been run.
 
 ## Current request and job flows
 
 1. Authenticated requests use company membership dependencies for company-scoped endpoints. Resource queries include the company ID in the repository code.
 2. Invoice upload stores the file locally, creates an invoice row, and enqueues `extract_invoice` through Redis/arq.
-3. The worker reads the referenced file, sends it to Anthropic, parses the returned vendor, amount, and date, and updates the invoice processing status. Missing extracted values may remain null while the job is marked complete; parse or API errors are caught and recorded as failed.
-4. Transaction creation runs keyword-based categorization and looks up a matching global category when one is found. There is no LLM categorization fallback in the current code.
+3. The worker reads the referenced file, sends it to Anthropic, validates the JSON object and each extracted field, then persists parsed values. Parse or API errors are recorded as failed without persisting partially parsed fields. Missing values remain null and are logged for manual review; the status enum has no separate `needs_review` state yet.
+4. Transaction creation runs whole-word, longest-keyword-first categorization and looks up a matching global category when one is found. Unmatched transactions can remain uncategorized. There is no LLM categorization fallback in the current code.
+5. Transaction, invoice, budget, and category creation plus invoice upload require owner or accountant membership. Category references on transactions and budgets, and parent-category references, are restricted to global or same-company categories. Category reads include global defaults.
 
 The `ChatQuery` model exists, but no query agent or chat route was found. Dashboard aggregation, anomaly detection, digest generation, and CSV ingestion were also not found.
 
@@ -31,7 +32,7 @@ app/
   models/           SQLAlchemy entities, including ChatQuery
   schemas/          Pydantic request/response schemas
   scripts/          category seed script
-  services/         local file storage and rule-based categorization
+  services/         local file storage, rule-based categorization, and category-scope validation
   worker.py         arq tasks, including invoice extraction
 alembic/            schema migration scripts
 docs/               requirements, architecture, engineering, learning, and handoff docs
@@ -43,9 +44,12 @@ docker-compose.yml  PostgreSQL, Redis, and worker services
 - **Verified implementation / Handoff intent:** PostgreSQL is the source of persisted financial records; application code performs extraction parsing and persistence. The handoff's broader rule that LLMs never calculate or write to the database is a project constraint to preserve.
 - **Handoff decision:** arq was selected for asynchronous work; local storage is the current backend, with S3 considered later. The handoff says the API runs natively on Windows while infrastructure and the worker run in Docker. Compose confirms there is no API service, but the actual host runtime was not tested.
 - **Handoff decision:** Future AI features should use company-scoped, restricted data access and deterministic calculations. These features are not yet implemented.
-- **Verified concern:** Membership is checked on resource creation, but several create routes do not require an owner/accountant role. Apply the intended role policy consistently before expanding write capabilities.
+- **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is selected for upcoming categorization and aggregate work, consistent with the existing expense fixtures and project plan.
+- **Verified:** Financial request schemas reject amounts that exceed the database's two-decimal, 12-digit precision.
+- **Open:** Category kind and transaction categorization status/source are not modeled yet. The next categorization feature needs a reviewed migration before application.
+- **Verified:** Pytest unit and PostgreSQL API tests exist. The suite was run against the guarded `finpilot_test` database; no real Anthropic call is made by tests. One warning remains from the installed AnyIO pytest plugin's use of a deprecated pytest alias.
 
-Migration files exist in the repository. Whether they have been applied to any database is unresolved.
+Migration files exist in the repository. Existing migrations were applied to `finpilot_test` during test runs; application database state is unresolved. No schema migration was added in the baseline-hardening milestone.
 
 ## Layer 2 — LLM categorization fallback
 
@@ -65,7 +69,7 @@ The LLM never invents categories, never does arithmetic, and never writes to the
 - Embeddings / RAG
 
 ### A2. Conventions this design relies on
-- **Amount sign:** positive = money in, negative = money out. Direction is derived from the sign, never guessed. *(Open decision D1. Confirm before Task 3.)*
+- **Amount sign — selected:** positive = money in, negative = money out. Direction is derived from the sign, never guessed. This is the convention for upcoming categorization and aggregates.
 - **Category kind:** every category is `income` or `expense`. A transaction's direction must match its category's kind (inflow → income category, outflow → expense category). Both layers enforce this.
 
 ### A3. Flow
@@ -177,7 +181,6 @@ One structured log line per job: `transaction_id`, `company_id`, `outcome`, `con
 - **Eval (manual, real API, never in CI):** labeled CSV written by you; reports coverage and precision at each threshold.
 
 ### A13. Open items
-- **D1** Amount sign convention (blocks Task 3).
 - **D2** Threshold calibration, after the first eval run.
 - **D3** Stuck-row sweeper using an arq cron job (also backfills old uncategorized rows).
 - **D4** Per-company learned rules from accepted/overridden suggestions.

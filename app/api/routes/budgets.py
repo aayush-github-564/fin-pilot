@@ -8,6 +8,7 @@ from app.api.deps import get_current_company_member, get_db, require_role
 from app.models.budget import Budget
 from app.models.company_member import CompanyMember
 from app.schemas.budget import BudgetCreate, BudgetRead, BudgetUpdate
+from app.services.category_scope import validate_category_scope
 
 router = APIRouter(prefix="/companies/{company_id}/budgets", tags=["budgets"])
 
@@ -16,9 +17,10 @@ router = APIRouter(prefix="/companies/{company_id}/budgets", tags=["budgets"])
 async def create_budget(
     company_id: uuid.UUID,
     payload: BudgetCreate,
-    membership: CompanyMember = Depends(get_current_company_member),
+    membership: CompanyMember = Depends(require_role("owner", "accountant")),
     db: AsyncSession = Depends(get_db),
 ):
+    await validate_category_scope(db, company_id, payload.category_id)
     budget = Budget(company_id=company_id, **payload.model_dump())
     db.add(budget)
     await db.commit()
@@ -68,6 +70,12 @@ async def update_budget(
         raise HTTPException(status_code=404, detail="Budget not found")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
+        if field == "category_id":
+            if value is None:
+                raise HTTPException(
+                    status_code=422, detail="Budget category cannot be null"
+                )
+            await validate_category_scope(db, company_id, value)
         setattr(budget, field, value)
 
     await db.commit()
