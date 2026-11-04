@@ -17,9 +17,11 @@ Repository facts below were checked against the source and configuration. Histor
 
 1. Authenticated requests use company membership dependencies for company-scoped endpoints. Resource queries include the company ID in the repository code.
 2. Invoice upload stores the file locally, creates an invoice row, and enqueues `extract_invoice` through Redis/arq.
-3. The worker reads the referenced file, sends it to Anthropic, validates the JSON object and each extracted field, then persists parsed values. Parse or API errors are recorded as failed without persisting partially parsed fields. Missing values remain null and are logged for manual review; the status enum has no separate `needs_review` state yet.
-4. Transaction creation runs whole-word, longest-keyword-first categorization and looks up a matching global category when one is found. Unmatched transactions can remain uncategorized. There is no LLM categorization fallback in the current code.
-5. Transaction, invoice, budget, and category creation plus invoice upload require owner or accountant membership. Category references on transactions and budgets, and parent-category references, are restricted to global or same-company categories. Category reads include global defaults.
+3. The invoice worker reads the referenced file, sends it to Anthropic, validates the JSON object and each extracted field, then persists parsed values. Parse or API errors are recorded as failed without persisting partially parsed fields. Missing values remain null and are logged for manual review; invoice processing has no separate `needs_review` status yet.
+4. Transaction creation applies whole-word, longest-keyword-first rules only when the transaction sign and category kind agree. A miss is committed as `pending` before `categorize_transaction` is enqueued. Queue failures leave the row pending; an arq cron sweeper retries stale pending rows.
+5. The categorization worker loads the transaction first, derives company and direction from the stored row, and reads only global and same-company categories of the matching kind. The Anthropic call uses a forced tool with an enum of category names; the service has no database access. A conditional update applies high-confidence results or sends uncertain/invalid results to review. Retries use arq only, with SDK retries disabled for this client.
+6. Owners and accountants can accept a review suggestion or override a category. Viewers can read the review queue. Manual changes set `user` source; accepted suggestions retain `llm_confirmed` source.
+7. Transaction, invoice, budget, and category creation plus invoice upload require owner or accountant membership. Category references on transactions and budgets, and parent-category references, are restricted to global or same-company categories. Category reads include global defaults.
 
 The `ChatQuery` model exists, but no query agent or chat route was found. Dashboard aggregation, anomaly detection, digest generation, and CSV ingestion were also not found.
 
@@ -32,7 +34,7 @@ app/
   models/           SQLAlchemy entities, including ChatQuery
   schemas/          Pydantic request/response schemas
   scripts/          category seed script
-  services/         local file storage, rule-based categorization, and category-scope validation
+  services/         local file storage, rule-based and LLM categorization, and category-scope validation
   worker.py         arq tasks, including invoice extraction
 alembic/            schema migration scripts
 docs/               requirements, architecture, engineering, learning, and handoff docs
@@ -44,12 +46,13 @@ docker-compose.yml  PostgreSQL, Redis, and worker services
 - **Verified implementation / Handoff intent:** PostgreSQL is the source of persisted financial records; application code performs extraction parsing and persistence. The handoff's broader rule that LLMs never calculate or write to the database is a project constraint to preserve.
 - **Handoff decision:** arq was selected for asynchronous work; local storage is the current backend, with S3 considered later. The handoff says the API runs natively on Windows while infrastructure and the worker run in Docker. Compose confirms there is no API service, but the actual host runtime was not tested.
 - **Handoff decision:** Future AI features should use company-scoped, restricted data access and deterministic calculations. These features are not yet implemented.
-- **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is selected for upcoming categorization and aggregate work, consistent with the existing expense fixtures and project plan.
+- **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is used by categorization and will be used by financial aggregates, consistent with the existing expense fixtures and project plan.
 - **Verified:** Financial request schemas reject amounts that exceed the database's two-decimal, 12-digit precision.
-- **Open:** Category kind and transaction categorization status/source are not modeled yet. The next categorization feature needs a reviewed migration before application.
-- **Verified:** Pytest unit and PostgreSQL API tests exist. The suite was run against the guarded `finpilot_test` database; no real Anthropic call is made by tests. One warning remains from the installed AnyIO pytest plugin's use of a deprecated pytest alias.
+- **Verified:** Categories carry an `income` or `expense` kind. Transactions carry categorization status, provenance, suggestion, and confidence. The category/categorization migration was manually reviewed and its upgrade/downgrade cycle was exercised on `finpilot_test` only.
+- **Verified:** The default categorization threshold is 0.85 and configurable, as are the model and maximum attempts. The manual evaluation harness fixes its precision target at 0.95 and is not run by CI.
+- **Verified:** Pytest unit and PostgreSQL API/worker tests exist. The suite was run against the guarded `finpilot_test` database; no real Anthropic call is made by tests. One warning remains from the installed AnyIO pytest plugin's use of a deprecated pytest alias.
 
-Migration files exist in the repository. Existing migrations were applied to `finpilot_test` during test runs; application database state is unresolved. No schema migration was added in the baseline-hardening milestone.
+The category/categorization migration is present and was applied, downgraded, and reapplied on `finpilot_test`; application database state is unresolved. No schema migration was added in the preceding baseline-hardening milestone.
 
 ## Layer 2 — LLM categorization fallback
 
@@ -58,7 +61,7 @@ When a transaction has no category after rule-based matching (Layer 1), an LLM p
 
 The LLM never invents categories, never does arithmetic, and never writes to the database. Application code owns every read, validation and write.
 
-**In scope:** async categorization of a single transaction, the review endpoints, logging for metrics, an offline eval harness.
+**In scope:** async categorization of a single transaction, review endpoints, structured metrics logging, and a manual labeled-CSV evaluation harness.
 
 **Out of scope (v1):**
 - Batching many transactions per LLM call
@@ -111,11 +114,11 @@ Seeds: make seeding **idempotent** (insert only if a global category with that n
 ### A5. Components
 | Component | Responsibility |
 |---|---|
-| `app/services/categorization.py` (Layer 1, existing) | Keyword matching. Fix: word boundaries, longest keyword first, kind must match direction. |
-| `app/services/llm_categorization.py` (new) | Pure function: build the request, call the model, parse the answer. No DB. The Anthropic client is passed in, so tests pass a fake. |
-| `app/worker.py` | `categorize_transaction`: glue only (load, guard, call service, atomic write, log). |
-| `app/api/routes/transactions.py` | Sets status/source on create and PATCH, enqueues the job, review endpoints. |
-| `app/core/config.py` | `categorization_model`, `categorization_confidence_threshold`, `categorization_max_tries`. |
+| `app/services/categorization.py` | Whole-word, longest-match rules plus signed-amount direction. |
+| `app/services/llm_categorization.py` | Builds the constrained request and validates tool output; no database access. The worker passes the client so tests use a fake. |
+| `app/worker.py` | Loads scoped candidates, calls the service outside a DB session, applies one atomic conditional update, retries transient errors, logs outcomes, and sweeps stale pending rows. |
+| `app/api/routes/transactions.py` | Sets status/source on create and PATCH, commits before enqueue, and exposes review/accept endpoints. |
+| `app/core/config.py` | `categorization_model`, `categorization_confidence_threshold`, and `categorization_max_tries`. |
 
 ### A6. LLM contract
 **Shown to the model:**
@@ -149,7 +152,7 @@ When a human acts on a suggestion:
 - **Commit before enqueue**, always. Otherwise the worker can run before the row exists.
 - Job id `categorize:<tx_id>` collapses duplicate enqueues.
 - **Never read-modify-write.** The final write is a single `UPDATE ... WHERE id = :id AND category_id IS NULL AND categorization_status = 'pending'`. If rowcount is 0, a human or another job got there first: log "superseded" and exit. This is what stops the job overwriting a user's manual category.
-- If enqueue fails (Redis down), the request still succeeds and the row stays `pending`. A periodic sweeper (later task) re-enqueues stuck rows.
+- If enqueue fails (Redis down), the request still succeeds and the row stays `pending`. An arq cron sweeper runs every five minutes and re-enqueues rows pending for at least five minutes.
 
 ### A9. Failure handling
 - Transient (timeout, 429, 5xx): arq `Retry` with backoff, up to `max_tries` (3). Then `status=failed`.
@@ -165,7 +168,7 @@ When a human acts on a suggestion:
 - Accept/override endpoints require owner or accountant. Viewers are read-only.
 
 ### A11. Observability
-One structured log line per job: `transaction_id`, `company_id`, `outcome`, `confidence`, `model`, `latency_ms`, input/output tokens, attempt number. This also produces the confidence distribution the spec asks for.
+One structured log line per job: `transaction_id`, `company_id`, originating `request_id` when available, `outcome`, `confidence`, `model`, `latency_ms`, input/output tokens, attempt number. Sweeper-enqueued jobs have no originating request ID. This also produces the confidence distribution the spec asks for.
 
 ### A12. Testing
 - **Unit (service, fake client):** valid, low confidence, null, unknown name, malformed output, direction filtering.
@@ -182,5 +185,4 @@ One structured log line per job: `transaction_id`, `company_id`, `outcome`, `con
 
 ### A13. Open items
 - **D2** Threshold calibration, after the first eval run.
-- **D3** Stuck-row sweeper using an arq cron job (also backfills old uncategorized rows).
 - **D4** Per-company learned rules from accepted/overridden suggestions.

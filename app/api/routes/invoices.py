@@ -1,7 +1,7 @@
 import uuid
 
 from arq import ArqRedis
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +41,7 @@ async def list_invoices(
 @router.post("/upload", response_model=InvoiceRead, status_code=201)
 async def upload_invoice(
     company_id: uuid.UUID,
+    request: Request,
     file: UploadFile = File(...),
     member: CompanyMember = Depends(require_role("owner", "accountant")),
     db: AsyncSession = Depends(get_db),
@@ -56,7 +57,9 @@ async def upload_invoice(
     await db.commit()
     await db.refresh(invoice)
 
-    await redis.enqueue_job("extract_invoice", str(invoice.id))
+    await redis.enqueue_job(
+        "extract_invoice", str(invoice.id), request.state.request_id
+    )
 
     return invoice
 
