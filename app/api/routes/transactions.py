@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import uuid
+from datetime import date as date_type
+from typing import Literal
 from uuid import UUID
 
 from arq import ArqRedis
@@ -13,7 +15,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
-from sqlalchemy import case, select, update
+from sqlalchemy import case, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,6 +37,7 @@ from app.schemas.transaction import (
     CSVImportRead,
     CSVImportRowRead,
     TransactionCreate,
+    TransactionPageRead,
     TransactionRead,
     TransactionUpdate,
 )
@@ -126,22 +129,72 @@ async def create_transaction(
     return transaction
 
 
-@router.get("", response_model=list[TransactionRead])
+@router.get("", response_model=TransactionPageRead)
 async def list_transactions(
     company_id: uuid.UUID,
+    offset: int = Query(default=0, ge=0, le=100_000),
+    limit: int = Query(default=50, ge=1, le=200),
+    start_date: date_type | None = Query(default=None),
+    end_date: date_type | None = Query(default=None),
+    category_id: uuid.UUID | None = Query(default=None),
+    categorization_status: CategorizationStatus | None = Query(default=None),
+    source: TransactionSource | None = Query(default=None),
+    direction: Literal["inflow", "outflow"] | None = Query(default=None),
+    search: str | None = Query(default=None, max_length=100),
     membership: CompanyMember = Depends(get_current_company_member),
     db: AsyncSession = Depends(get_db),
 ):
+    if start_date is not None and end_date is not None and start_date > end_date:
+        raise HTTPException(
+            status_code=422, detail="start_date must be on or before end_date"
+        )
+    filters = [Transaction.company_id == company_id]
+    if start_date is not None:
+        filters.append(Transaction.date >= start_date)
+    if end_date is not None:
+        filters.append(Transaction.date <= end_date)
+    if category_id is not None:
+        filters.append(Transaction.category_id == category_id)
+    if categorization_status is not None:
+        filters.append(Transaction.categorization_status == categorization_status)
+    if source is not None:
+        filters.append(Transaction.source == source)
+    if direction == "inflow":
+        filters.append(Transaction.amount > 0)
+    elif direction == "outflow":
+        filters.append(Transaction.amount < 0)
+    if search and search.strip():
+        escaped_search = (
+            search.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        )
+        filters.append(
+            Transaction.description.ilike(f"%{escaped_search}%", escape="\\")
+        )
+
+    await db.execute(text("SET LOCAL statement_timeout = '5000ms'"))
+    total = await db.scalar(
+        select(func.count(Transaction.id)).where(*filters)
+    )
     result = await db.execute(
         select(Transaction)
-        .where(Transaction.company_id == company_id)
+        .where(*filters)
         .order_by(
             Transaction.date.desc(),
             Transaction.created_at.desc(),
             Transaction.id,
         )
+        .offset(offset)
+        .limit(limit)
     )
-    return result.scalars().all()
+    items = result.scalars().all()
+    total_count = int(total or 0)
+    return TransactionPageRead(
+        items=items,
+        total=total_count,
+        offset=offset,
+        limit=limit,
+        has_more=offset + len(items) < total_count,
+    )
 
 
 @router.get("/review", response_model=list[TransactionRead])

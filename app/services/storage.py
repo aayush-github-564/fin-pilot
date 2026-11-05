@@ -43,3 +43,16 @@ def get_file_path(file_reference: str) -> Path:
     The extraction worker will use this to actually open the file.
     """
     return UPLOAD_ROOT / file_reference
+
+
+def resolve_file_path(file_reference: str) -> Path:
+    """Resolve an existing stored file while preventing traversal outside uploads."""
+    upload_root = UPLOAD_ROOT.resolve()
+    resolved = get_file_path(file_reference).resolve(strict=True)
+    try:
+        resolved.relative_to(upload_root)
+    except ValueError as error:
+        raise ValueError("Stored file reference escapes the upload directory") from error
+    if not resolved.is_file():
+        raise FileNotFoundError("Stored upload is not a regular file")
+    return resolved

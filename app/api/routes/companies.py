@@ -16,6 +16,7 @@ from app.models.company_member import CompanyMember, CompanyRole
 from app.models.user import User
 from app.schemas.company import (
     CompanyCreate,
+    CompanyMembershipRead,
     CompanyRead,
     CompanyUpdate,
     MemberInvite,
@@ -31,7 +32,7 @@ async def create_company(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    company = Company(name=payload.name)
+    company = Company(name=payload.name, currency_code=payload.currency_code)
     db.add(company)
     await db.flush()  # assigns company.id without committing yet
 
@@ -47,17 +48,33 @@ async def create_company(
     return company
 
 
-@router.get("", response_model=list[CompanyRead])
+@router.get("", response_model=list[CompanyMembershipRead])
 async def list_my_companies(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Company)
+        select(
+            Company.id,
+            Company.name,
+            Company.currency_code,
+            Company.created_at,
+            CompanyMember.role,
+        )
         .join(CompanyMember, CompanyMember.company_id == Company.id)
         .where(CompanyMember.user_id == current_user.id)
+        .order_by(Company.created_at, Company.id)
     )
-    return result.scalars().all()
+    return [
+        CompanyMembershipRead(
+            company_id=row.id,
+            name=row.name,
+            currency_code=row.currency_code,
+            created_at=row.created_at,
+            role=row.role,
+        )
+        for row in result
+    ]
 
 
 @router.get("/{company_id}", response_model=CompanyRead)
@@ -77,12 +94,24 @@ async def update_company(
     db: AsyncSession = Depends(get_db),
     member: CompanyMember = Depends(require_role("owner")),
 ):
-    result = await db.execute(select(Company).where(Company.id == company_id))
+    result = await db.execute(
+        select(Company).where(Company.id == company_id).with_for_update()
+    )
     company = result.scalar_one_or_none()
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    changes = payload.model_dump(exclude_unset=True)
+    if "currency_code" in changes:
+        new_currency = changes["currency_code"]
+        if new_currency is None:
+            raise HTTPException(status_code=422, detail="currency_code cannot be null")
+        if company.currency_code is not None and new_currency != company.currency_code:
+            raise HTTPException(
+                status_code=409,
+                detail="Company currency cannot be changed after it has been set",
+            )
+    for field, value in changes.items():
         setattr(company, field, value)
 
     await db.commit()

@@ -3,7 +3,12 @@ from app.models.category import Category, CategoryKind
 from app.models.chat_query import ChatQuery
 from app.models.company import Company
 from app.models.company_member import CompanyMember, CompanyRole
-from app.models.invoice import Invoice, InvoiceStatus
+from app.models.invoice import (
+    Invoice,
+    InvoiceDirection,
+    InvoiceStatus,
+    ProcessingStatus,
+)
 from app.models.transaction import (
     CategorizationSource,
     CategorizationStatus,
@@ -22,7 +27,9 @@ __all__ = [
     "CompanyMember",
     "CompanyRole",
     "Invoice",
+    "InvoiceDirection",
     "InvoiceStatus",
+    "ProcessingStatus",
     "Transaction",
     "TransactionSource",
     "CategorizationStatus",
