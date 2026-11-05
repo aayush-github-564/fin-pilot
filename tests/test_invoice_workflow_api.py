@@ -122,3 +122,71 @@ async def test_invoice_cannot_be_confirmed_before_extraction_or_without_required
 
     assert pending_confirmation.status_code == 409
     assert incomplete_confirmation.status_code == 422
+
+
+async def test_invoice_status_is_enum_validated_and_invoice_list_is_newest_first_paged(
+    async_client: AsyncClient, actor_factory: Any
+) -> None:
+    from datetime import datetime, timedelta
+    from decimal import Decimal
+
+    from app.core.db import AsyncSessionLocal
+    from app.models import Invoice, InvoiceDirection, InvoiceStatus, ProcessingStatus
+
+    owner = await actor_factory("owner")
+    base_url = f"/api/v1/companies/{owner.company_id}/invoices"
+    invalid = await async_client.post(
+        base_url,
+        headers=owner.headers,
+        json={
+            "direction": "purchase",
+            "vendor": "Vendor",
+            "amount": "10.00",
+            "date": "2026-04-01",
+            "status": "unknown",
+        },
+    )
+    assert invalid.status_code == 422
+    null_status = await async_client.patch(
+        f"{base_url}/00000000-0000-0000-0000-000000000000",
+        headers=owner.headers,
+        json={"status": None},
+    )
+    assert null_status.status_code == 422
+
+    created_at = datetime(2026, 4, 1)
+    async with AsyncSessionLocal() as session:
+        older = Invoice(
+            company_id=owner.company_id,
+            direction=InvoiceDirection.purchase,
+            vendor="Older",
+            amount=Decimal("10.00"),
+            date=created_at.date(),
+            status=InvoiceStatus.pending,
+            processing_status=ProcessingStatus.complete,
+            created_at=created_at,
+        )
+        newer = Invoice(
+            company_id=owner.company_id,
+            direction=InvoiceDirection.sale,
+            vendor="Newer",
+            amount=Decimal("20.00"),
+            date=created_at.date(),
+            status=InvoiceStatus.paid,
+            processing_status=ProcessingStatus.complete,
+            created_at=created_at + timedelta(days=1),
+        )
+        session.add_all([older, newer])
+        await session.commit()
+        older_id, newer_id = older.id, newer.id
+
+    first_page = await async_client.get(
+        base_url, headers=owner.headers, params={"skip": 0, "limit": 1}
+    )
+    second_page = await async_client.get(
+        base_url, headers=owner.headers, params={"skip": 1, "limit": 1}
+    )
+
+    assert first_page.status_code == second_page.status_code == 200
+    assert first_page.json()[0]["id"] == str(newer_id)
+    assert second_page.json()[0]["id"] == str(older_id)

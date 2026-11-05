@@ -13,6 +13,7 @@ dependencies = [
     "fastapi[standard]>=0.141.1",
     "passlib[bcrypt]>=1.7.4",
     "psycopg2-binary>=2.9.12",
+    "pycountry>=26.2.16",
     "pydantic-settings>=2.15.0",
     "pydantic[email]>=2.13.4",
     "python-jose[cryptography]>=3.5.0",

@@ -3,7 +3,16 @@ import uuid
 from datetime import UTC, datetime
 
 from arq import ArqRedis
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,10 +44,18 @@ async def create_invoice(
 @router.get("", response_model=list[InvoiceRead])
 async def list_invoices(
     company_id: uuid.UUID,
+    skip: int = Query(default=0, ge=0, le=100_000),
+    limit: int = Query(default=50, ge=1, le=200),
     membership: CompanyMember = Depends(get_current_company_member),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Invoice).where(Invoice.company_id == company_id))
+    result = await db.execute(
+        select(Invoice)
+        .where(Invoice.company_id == company_id)
+        .order_by(Invoice.created_at.desc(), Invoice.id.desc())
+        .offset(skip)
+        .limit(limit)
+    )
     return result.scalars().all()
 
 

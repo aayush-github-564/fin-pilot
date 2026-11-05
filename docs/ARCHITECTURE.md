@@ -73,11 +73,14 @@ Repository facts below were checked against the source and configuration. Histor
 
 ### Frontend-facing company, transaction, and invoice contracts
 
-- New companies must supply a three-letter alphabetic currency code (normalized to uppercase). Existing companies created before this field may be unset; an owner may set their currency once. Currency cannot be changed afterward because amounts are stored in that accounting currency and no conversion is performed. Existing financial amounts retain the v1 two-decimal precision limit.
+- New companies must supply a current ISO 4217 currency code (normalized to uppercase). Existing companies created before this field may be unset; an owner may set their currency once. Currency cannot be changed afterward because amounts are stored in that accounting currency and no conversion is performed. Existing financial amounts retain the v1 two-decimal precision limit. `pycountry` validates active ISO currency codes at the API boundary; the database constraint also enforces uppercase three-letter format.
 - Company list responses include the current caller's role for each company. This lets the UI hide write actions for viewers; backend role checks remain the actual authorization boundary.
+- `GET /companies/{company_id}/me` returns the authenticated member's role and company context using the same shape as company list entries.
 - The transaction list accepts `offset` (default 0, capped at 100,000) and `limit` (default 50, maximum 200), plus optional inclusive `start_date`/`end_date`, `category_id`, `categorization_status`, `source`, `direction`, and case-insensitive `search`. The response contains `items`, filtered `total`, paging values, and `has_more`. Each request sets a 5-second database statement timeout.
+- The invoice list accepts `skip` (default 0) and `limit` (default 50, maximum 200), and orders newest-first with a stable ID tie-breaker.
 - `GET /companies/{company_id}/invoices/{invoice_id}/download` is member-authenticated and company-scoped. It resolves stored paths within the upload directory and returns an attachment; the database storage reference is not a filesystem download URL.
 - Invoice direction is selected at upload. `POST /invoices/{invoice_id}/confirm` is owner/accountant-only and idempotent; it is available only after extraction is no longer pending/processing and required fields are present. Confirmed invoice details are locked, while payment status may still change. Confirmation does not count the invoice as cash flow.
+- Invoice payment status is constrained to the `pending`, `paid`, `overdue`, and `cancelled` enum values in request and response schemas.
 - Access tokens expire after 30 minutes. Refresh tokens are intentionally omitted in v1; clients must sign in again after expiry.
 
 ## Repository structure
@@ -91,6 +94,8 @@ app/
   scripts/          category seed script
   services/         local file storage, CSV parsing, cash-flow math, financial Q&A, weekly digest aggregation/email, rule-based and LLM categorization, and category-scope validation
   worker.py         arq tasks, including invoice extraction, categorization, and weekly digest generation/delivery
+frontend/           Vite/React single-page app, generated API schema, and production same-origin configuration
+app/scripts/export_openapi.py  writes the OpenAPI contract used for frontend type generation
 alembic/            schema migration scripts
 docs/               requirements, architecture, engineering, learning, and handoff docs
 docker-compose.yml  PostgreSQL, Redis, and worker services

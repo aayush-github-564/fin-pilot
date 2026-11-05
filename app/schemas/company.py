@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
+import pycountry
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.company_member import CompanyRole
@@ -15,7 +16,7 @@ class CompanyCreate(BaseModel):
     @field_validator("currency_code")
     @classmethod
     def normalize_currency_code(cls, value: str) -> str:
-        return value.upper()
+        return _normalize_currency_code(value)
 
 
 class CompanyRead(BaseModel):
@@ -42,7 +43,15 @@ class CompanyUpdate(BaseModel):
     @field_validator("currency_code")
     @classmethod
     def normalize_currency_code(cls, value: str | None) -> str | None:
-        return value.upper() if value is not None else value
+        return _normalize_currency_code(value) if value is not None else value
+
+
+def _normalize_currency_code(value: str) -> str:
+    normalized = value.upper()
+    currency = pycountry.currencies.get(alpha_3=normalized)
+    if currency is None or getattr(currency, "withdrawal_date", None) is not None:
+        raise ValueError("currency_code must be a current ISO 4217 code")
+    return normalized
 
 
 class MemberInvite(BaseModel):
