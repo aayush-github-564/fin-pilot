@@ -77,6 +77,23 @@ async def list_my_companies(
     ]
 
 
+@router.get("/{company_id}/me", response_model=CompanyMembershipRead)
+async def get_my_company_membership(
+    company_id: UUID,
+    membership: CompanyMember = Depends(get_current_company_member),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Company).where(Company.id == company_id))
+    company = result.scalar_one()
+    return CompanyMembershipRead(
+        company_id=company.id,
+        name=company.name,
+        currency_code=company.currency_code,
+        created_at=company.created_at,
+        role=membership.role,
+    )
+
+
 @router.get("/{company_id}", response_model=CompanyRead)
 async def get_company(
     company_id: uuid.UUID,

@@ -6,7 +6,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.invoice import InvoiceDirection
+from app.models.invoice import InvoiceDirection, InvoiceStatus
 
 
 class InvoiceCreate(BaseModel):
@@ -14,7 +14,7 @@ class InvoiceCreate(BaseModel):
     vendor: str
     amount: Decimal = Field(max_digits=12, decimal_places=2)
     date: date_type
-    status: str = "pending"
+    status: InvoiceStatus = InvoiceStatus.pending
 
 
 class InvoiceRead(BaseModel):
@@ -26,7 +26,7 @@ class InvoiceRead(BaseModel):
     vendor: Optional[str] = None
     amount: Optional[Decimal] = None
     date: Optional[date_type] = None
-    status: str
+    status: InvoiceStatus
     processing_status: str
     confirmed_at: datetime | None = None
     file_reference: Optional[str] = None
@@ -37,4 +37,4 @@ class InvoiceUpdate(BaseModel):
     vendor: Optional[str] = None
     amount: Optional[Decimal] = Field(default=None, max_digits=12, decimal_places=2)
     date: Optional[date_type] = None
-    status: Optional[str] = None
+    status: InvoiceStatus = InvoiceStatus.pending

@@ -14,6 +14,11 @@ async def test_new_company_requires_and_normalizes_iso_currency_code(
     missing = await async_client.post(
         "/api/v1/companies", headers=owner.headers, json={"name": "New Co"}
     )
+    invalid = await async_client.post(
+        "/api/v1/companies",
+        headers=owner.headers,
+        json={"name": "New Co", "currency_code": "ZZZ"},
+    )
     created = await async_client.post(
         "/api/v1/companies",
         headers=owner.headers,
@@ -21,6 +26,7 @@ async def test_new_company_requires_and_normalizes_iso_currency_code(
     )
 
     assert missing.status_code == 422
+    assert invalid.status_code == 422
     assert created.status_code == 201, created.text
     assert created.json()["currency_code"] == "INR"
 
@@ -48,3 +54,15 @@ async def test_owner_can_set_legacy_currency_once_and_viewer_cannot_change_it(
     assert set_currency.json()["currency_code"] == "USD"
     assert change_currency.status_code == 409
     assert forbidden.status_code == 403
+
+
+async def test_legacy_company_currency_must_be_a_current_iso_4217_code(
+    async_client: AsyncClient, actor_factory: Any
+) -> None:
+    owner = await actor_factory("owner")
+    response = await async_client.patch(
+        f"/api/v1/companies/{owner.company_id}",
+        headers=owner.headers,
+        json={"currency_code": "DEM"},
+    )
+    assert response.status_code == 422

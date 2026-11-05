@@ -8,7 +8,7 @@
 
 ## Product direction
 
-**Project spec:** FinPilot is a multi-tenant financial operations app for small businesses. The required backend features—constrained financial Q&A, anomaly explanations, and weekly digests—are implemented. Frontend and deployment work are excluded from the current completion task.
+**Project spec:** FinPilot is a multi-tenant financial operations app for small businesses. The required backend features—constrained financial Q&A, anomaly explanations, and weekly digests—are implemented. The current build adds the frontend defined in `docs/FRONTEND_ARCHITECTURE.md`, including same-origin local/container serving. Broader deployment automation remains outside this build.
 
 ## Current functional baseline
 
@@ -16,7 +16,7 @@
 
 ## Planned product scope
 
-**Project spec:** The required backend scope is implemented. The categorization evaluation harness exists but has not been run against a real labeled sample. Frontend and deployment are explicitly deferred. Stretch forecasting and recommendations follow Tier 1 and Tier 2.
+**Project spec:** The required backend scope is implemented. The categorization evaluation harness exists but has not been run against a real labeled sample. Frontend implementation is active under the current task. Stretch forecasting and recommendations follow Tier 1 and Tier 2.
 
 ## Constraints and design principles
 
@@ -34,7 +34,7 @@
 - **Resolved for financial Q&A v1:** The model selects only an enumerated query type and bounded period, with an optional category from the company's expense-category allowlist. Application code validates the plan and runs fixed company-scoped read-only queries; the model receives no transaction rows and generates no SQL or financial facts. Responses are deterministic, audit records retain the question/plan/result, and Redis limits each user to 10 requests per company per minute by default.
 - **Resolved for anomaly detection v1:** An on-demand endpoint scans recent company expenses against a non-overlapping historical window. It uses a normalized transaction description as a merchant proxy, falls back to category history, and requires three baseline transactions plus a 3x mean and 3-standard-deviation threshold (or 3x when variance is zero). SQL/response sizes are bounded. The LLM gets only flagged labels and the computed comparison statement; validated prose is optional, with deterministic fallback. No anomaly table or migration is needed for this on-demand report.
 - **Resolved for weekly digests v1:** A Monday 08:00 UTC job generates the previous full UTC week once per company, with cash-flow comparisons, top categorized expenses, and month-to-date budget facts through the week end. All calculations are SQL/backend-owned. A constrained LLM may write numeric-free qualitative prose; deterministic wording is the fallback. Saved digests are readable by company members. Separate private email delivery targets current owners/accountants, retries transient failures up to five attempts, and remains `not_configured` until SMTP host/from values are supplied.
-- **Resolved for frontend company context:** New companies require a three-letter alphabetic currency code; legacy companies may be assigned one by an owner. The value is write-once because the ledger has no currency conversion. The existing two-decimal amount precision remains the v1 contract.
+- **Resolved for frontend company context:** New companies require a current ISO 4217 currency code; legacy companies may be assigned one by an owner. The value is write-once because the ledger has no currency conversion. The existing two-decimal amount precision remains the v1 contract.
 - **Resolved for invoice review:** Uploaded invoices require purchase/sale direction. Owners/accountants confirm extraction after required fields are present. Confirmation does not create a transaction or change cash-flow metrics; cash movements must be recorded separately. Members can download invoice files only through a company-scoped API endpoint.
 - **Resolved for frontend transaction lists:** The main transaction endpoint is offset-paginated (default 50, maximum 200), returns a filtered total and `has_more`, and supports date, category, categorization status, source, direction, and description search filters. Requests cap offsets at 100,000 and use a 5-second statement timeout. Company list responses include the caller's role for presentation; server-side authorization remains enforced.
 - **Resolved for v1 authentication:** Access tokens expire after 30 minutes and there is no refresh token. The client must return to login after expiry; refresh sessions are deferred.

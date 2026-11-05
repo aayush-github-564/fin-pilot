@@ -111,6 +111,7 @@ async def test_transaction_list_paginates_and_applies_company_scoped_filters(
     assert first_page.status_code == second_page.status_code == filtered.status_code == 200
     assert first_page.json()["total"] == 4
     assert first_page.json()["has_more"] is True
+    assert isinstance(first_page.json()["items"][0]["amount"], str)
     assert [item["date"] for item in first_page.json()["items"]] == [
         "2026-04-04",
         "2026-04-03",

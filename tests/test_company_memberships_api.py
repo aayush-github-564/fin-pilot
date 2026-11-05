@@ -38,3 +38,22 @@ async def test_company_list_includes_callers_role_and_only_their_companies(
             "role": "viewer",
         }
     ]
+
+
+async def test_company_me_returns_current_membership_and_rejects_non_members(
+    async_client: AsyncClient, actor_factory: Any
+) -> None:
+    owner = await actor_factory("owner")
+    outsider = await actor_factory("viewer")
+
+    response = await async_client.get(
+        f"/api/v1/companies/{owner.company_id}/me", headers=owner.headers
+    )
+    forbidden = await async_client.get(
+        f"/api/v1/companies/{owner.company_id}/me", headers=outsider.headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["company_id"] == str(owner.company_id)
+    assert response.json()["role"] == "owner"
+    assert forbidden.status_code == 403
