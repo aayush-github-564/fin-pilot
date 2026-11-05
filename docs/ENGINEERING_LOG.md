@@ -10,7 +10,8 @@ This log records milestones and outstanding engineering work, not a file-by-file
 - **Committed — Layer 2 categorization:** Commit `2e7f70e` adds category kinds and transaction categorization state, the constrained Anthropic tool contract, an arq worker with atomic writes/retries, review/accept routes, stale-row sweeping, JSON log formatting with request IDs propagated to categorization and invoice jobs, and a manual labeled-CSV evaluation harness.
 - **Committed — CSV ingestion:** Commit `a5ead59` adds bounded bank-statement CSV parsing with per-row outcomes, stored-file row references, company-scoped idempotency, concurrent duplicate protection, and reuse of transaction categorization.
 - **Committed — financial metrics:** Added SQL-aggregated cash-flow and budget-versus-actual APIs, explicit period/runway semantics, and indexes for company/date and company/period queries.
-- **Current task — financial Q&A (uncommitted):** Added a constrained Anthropic query planner, fixed company-scoped read-only query templates, deterministic responses, Redis per-user/company rate limiting, and audited requests/results. The model receives category names and the question, never transaction rows; no generated SQL is executed. The audit migration was manually reviewed and applied to `finpilot_test` by the test setup. Latest full run: 122 passed; one existing AnyIO/pytest deprecation warning remains.
+- **Committed — financial Q&A:** Commit `5ecb6fe` adds a constrained Anthropic query planner, fixed company-scoped read-only query templates, deterministic responses, Redis per-user/company rate limiting, and audited requests/results. The model receives category names and the question, never transaction rows; no generated SQL is executed. The audit migration was manually reviewed and applied to `finpilot_test` by the test setup. The full run passed 122 tests.
+- **Current task — spending anomaly explanations (uncommitted):** Added an on-demand company-scoped API that compares recent expenses against normalized-description or category history, applies deterministic multiplier/z-score thresholds, bounds database work and responses, and uses validated LLM phrasing with deterministic fallback. No persistence migration was needed. Latest full run: 132 passed; one existing AnyIO/pytest deprecation warning remains.
 - **Handoff — historical verification:** The handoff reports one successful Claude extraction using a sample PDF and one successful rule-categorization example. Those live checks were not repeated during repository inspection.
 
 ## Current state and outstanding issues
@@ -20,10 +21,10 @@ This log records milestones and outstanding engineering work, not a file-by-file
 - **Verified:** During migration, legacy signed transactions with a category of the wrong kind are marked `needs_review` while retaining their existing category assignment.
 - **Open:** Confidence threshold calibration is pending a real labeled evaluation run. Per-company learned rules remain out of scope for this layer.
 - **Open:** Invoice processing has no distinct `needs_review` status for partial extraction; missing extracted fields are logged and left available for manual editing.
-- **Verified absence in this repository:** Anomaly detection and weekly digest generation remain unimplemented. Frontend and deployment are excluded from this task.
+- **Verified absence in this repository:** Weekly digest generation remains unimplemented. Frontend and deployment are excluded from this task.
 - **Open:** Application database migration state is unknown. Existing migrations were applied and rolled back/reapplied on the guarded `finpilot_test` database; the Q&A audit migration has so far been applied there by the test setup.
 - **Test warning:** The installed AnyIO pytest plugin uses a deprecated pytest alias; this is dependency-side and does not fail the suite.
 
 ## Recommended next engineering task
 
-Next implement anomaly explanations and weekly digests. Keep real LLM evaluation manual and leave frontend/deployment phases deferred.
+Next implement weekly digest generation. Keep real LLM evaluation manual and leave frontend/deployment phases deferred.

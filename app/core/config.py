@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     categorization_max_tries: int = Field(default=3, ge=1, le=10)
     financial_qa_model: str = "claude-haiku-4-5-20251001"
     financial_qa_max_queries_per_minute: int = Field(default=10, ge=1, le=100)
+    anomaly_max_explanations_per_minute: int = Field(default=10, ge=1, le=100)
+    anomaly_explanation_model: str = "claude-haiku-4-5-20251001"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

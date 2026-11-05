@@ -33,7 +33,7 @@ Repository facts below were checked against the source and configuration. Histor
 - A bank transaction/reference ID, when supplied, is the company-scoped duplicate key. Otherwise the key uses the exact file SHA-256 and record number. This makes exact file retries safe and preserves identical-looking separate purchases; a changed re-export without stable IDs may import the same transactions again.
 - A database unique constraint and `ON CONFLICT DO NOTHING` protect against concurrent retries. Per-row results are `imported`, `duplicate`, or `rejected`; when new rows are imported, the original CSV is retained by the storage service and each transaction's `raw_reference` points to its record. Duplicate-only and all-rejected uploads do not create additional files. Pending rows are enqueued only after commit and enqueue failures leave them recoverable by the existing sweeper.
 
-Anomaly detection and digest generation were not found.
+Weekly digest generation was not found.
 
 ### Financial Q&A contract
 
@@ -52,11 +52,20 @@ Anomaly detection and digest generation were not found.
 - `GET /companies/{company_id}/metrics/budget-vs-actual?period=YYYY-MM` returns each budgeted category for that month. Expense actuals sum the absolute value of negative transactions; income actuals sum positive transactions. Only transactions assigned to a budgeted category are included. Duplicate budget rows for one category/month are combined.
 - Aggregate queries run in PostgreSQL with `(company_id, date)` and `(company_id, period)` indexes. Redis caching is deferred in v1 to keep successful writes immediately reflected; add caching only with measured need and a reliable freshness/invalidation design.
 
+### Spending anomaly contract
+
+- `GET /companies/{company_id}/insights/anomalies` computes a read-only report on demand; anomaly rows are not persisted. Any company member may read the report.
+- By default, it scans the latest 30 UTC dates against the preceding 180 dates. Request bounds allow a 1–90 day scan window and a 30–730 day baseline window. The company/date index scopes all transaction reads; each SQL statement has a 3-second PostgreSQL timeout.
+- Negative transactions are treated as expenses. A normalized transaction description is used as a merchant proxy when at least three historical matches exist. Otherwise, the detector compares against the same valid company/global expense category when at least three historical transactions exist.
+- A transaction is flagged when it is at least three times the historical mean and at least three population standard deviations above it. If historical standard deviation is zero, the multiplier rule is sufficient. Results include the baseline count, average, multiplier, and z-score where defined.
+- The scan examines at most 1,000 recent expenses and returns at most 20 anomalies, with truncation flags. Long descriptions are capped at 250 characters in results.
+- One constrained Anthropic call may phrase the detected comparisons. It receives only flagged descriptions/category labels and the backend's precomputed comparison statement, not amounts or history. Numeric/currency claims and malformed output are rejected. Redis limits model explanations per user/company; unavailable or rate-limited model calls use deterministic explanations instead.
+
 ## Repository structure
 
 ```text
 app/
-  api/routes/       FastAPI auth, company, category, transaction, invoice, budget, metric, and chat routes
+  api/routes/       FastAPI auth, company, category, transaction, invoice, budget, metric, chat, and insight routes
   core/             settings, database, and security setup
   models/           SQLAlchemy entities, including ChatQuery
   schemas/          Pydantic request/response schemas
@@ -73,6 +82,7 @@ docker-compose.yml  PostgreSQL, Redis, and worker services
 - **Verified implementation / Handoff intent:** PostgreSQL is the source of persisted financial records; application code performs extraction parsing and persistence. The handoff's broader rule that LLMs never calculate or write to the database is a project constraint to preserve.
 - **Handoff decision:** arq was selected for asynchronous work; local storage is the current backend, with S3 considered later. The handoff says the API runs natively on Windows while infrastructure and the worker run in Docker. Compose confirms there is no API service, but the actual host runtime was not tested.
 - **Verified:** Financial Q&A uses a constrained planner and fixed read-only queries. It sends no transaction records to the model; the API formats answers from query results in application code.
+- **Verified:** Spending anomaly detection uses company-scoped historical vendor/category baselines and deterministic thresholds. The model only phrases already-detected comparisons; the backend supplies every financial figure and falls back to deterministic explanations.
 - **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is used by categorization and financial metrics, consistent with the existing expense fixtures and project plan.
 - **Verified:** Financial request schemas reject amounts that exceed the database's two-decimal, 12-digit precision.
 - **Verified:** Categories carry an `income` or `expense` kind. Transactions carry categorization status, provenance, suggestion, and confidence, plus a company-scoped import fingerprint for CSV idempotency. The categorization, CSV fingerprint, and financial-metric index migrations were manually reviewed and their upgrade/downgrade cycles were exercised on `finpilot_test` only.
