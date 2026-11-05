@@ -11,6 +11,7 @@ from app.models.transaction import (
     TransactionSource,
 )
 from app.models.user import User
+from app.models.weekly_digest import WeeklyDigest, WeeklyDigestDelivery
 
 __all__ = [
     "Budget",
@@ -27,4 +28,6 @@ __all__ = [
     "CategorizationStatus",
     "CategorizationSource",
     "User",
+    "WeeklyDigest",
+    "WeeklyDigestDelivery",
 ]
