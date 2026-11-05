@@ -4,7 +4,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic.json_schema import SkipJsonSchema
 
 from app.models.invoice import InvoiceDirection, InvoiceStatus
 
@@ -37,4 +38,13 @@ class InvoiceUpdate(BaseModel):
     vendor: Optional[str] = None
     amount: Optional[Decimal] = Field(default=None, max_digits=12, decimal_places=2)
     date: Optional[date_type] = None
-    status: InvoiceStatus = InvoiceStatus.pending
+    status: InvoiceStatus | SkipJsonSchema[None] = None
+
+    @field_validator("status")
+    @classmethod
+    def status_cannot_be_null(
+        cls, value: InvoiceStatus | None
+    ) -> InvoiceStatus | None:
+        if value is None:
+            raise ValueError("status cannot be null")
+        return value

@@ -53,7 +53,7 @@ These are decided. Implement them first or as early as needed; frontend work can
 |---|---|
 | App | Vite + React + TypeScript (strict) single-page app in `frontend/` beside `app/` |
 | Routing | React Router; company is in the URL: `/c/:companyId/...` |
-| Server state | TanStack Query. **Every query key begins with `["company", companyId]`.** |
+| Server state | TanStack Query. Every company-specific query key begins with `["company", companyId]`; the account-wide company directory uses `["company", "directory"]`, and current-user auth uses `["auth", "me"]`. |
 | API types | Generated from `frontend/openapi.json` with `openapi-typescript` and `openapi-fetch`. No hand-written API types except zod schemas for untyped `facts` payloads |
 | `facts` payloads | zod schemas written from **real captured responses**, with fallback to the plain-text `answer`/`summary` when parsing fails |
 | Forms / validation | react-hook-form + zod |
