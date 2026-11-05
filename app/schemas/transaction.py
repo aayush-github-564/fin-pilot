@@ -36,6 +36,14 @@ class TransactionRead(BaseModel):
     suggestion_confidence: Decimal | None
 
 
+class TransactionPageRead(BaseModel):
+    items: list[TransactionRead]
+    total: int
+    offset: int
+    limit: int
+    has_more: bool
+
+
 class CSVImportRowRead(BaseModel):
     row_number: int
     status: Literal["imported", "duplicate", "rejected"]
