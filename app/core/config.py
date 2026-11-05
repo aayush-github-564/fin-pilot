@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import EmailStr, Field, SecretStr, model_validator
 
 
 class Settings(BaseSettings):
@@ -17,6 +17,21 @@ class Settings(BaseSettings):
     financial_qa_max_queries_per_minute: int = Field(default=10, ge=1, le=100)
     anomaly_max_explanations_per_minute: int = Field(default=10, ge=1, le=100)
     anomaly_explanation_model: str = "claude-haiku-4-5-20251001"
+    weekly_digest_model: str = "claude-haiku-4-5-20251001"
+    digest_smtp_host: str | None = None
+    digest_smtp_port: int = Field(default=587, ge=1, le=65535)
+    digest_smtp_username: str | None = None
+    digest_smtp_password: SecretStr | None = None
+    digest_smtp_starttls: bool = True
+    digest_email_from: EmailStr | None = None
+
+    @model_validator(mode="after")
+    def smtp_credentials_must_be_paired(self) -> "Settings":
+        if bool(self.digest_smtp_username) != bool(self.digest_smtp_password):
+            raise ValueError(
+                "DIGEST_SMTP_USERNAME and DIGEST_SMTP_PASSWORD must be configured together"
+            )
+        return self
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

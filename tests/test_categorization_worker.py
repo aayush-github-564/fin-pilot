@@ -317,4 +317,7 @@ async def test_sweeper_reenqueues_only_old_pending_rows(
         }
     ]
     assert str(recent_id) not in fake_arq_pool.jobs[0]["args"]
-    assert len(WorkerSettings.cron_jobs) == 1
+    assert any(
+        job.coroutine is sweep_pending_categorization
+        for job in WorkerSettings.cron_jobs
+    )

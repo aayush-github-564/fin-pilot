@@ -7,26 +7,41 @@ from dataclasses import dataclass
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import anthropic
 from arq import Retry, cron
 from arq.connections import RedisSettings
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import and_, func, or_, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal, engine
 from app.core.logging import configure_logging
 from app.models.category import Category, CategoryKind
+from app.models.company import Company
+from app.models.company_member import CompanyMember, CompanyRole
 from app.models.invoice import Invoice, ProcessingStatus
 from app.models.transaction import (
     CategorizationSource,
     CategorizationStatus,
     Transaction,
 )
+from app.models.user import User
+from app.models.weekly_digest import WeeklyDigest, WeeklyDigestDelivery
 from app.services.categorization import category_kind_for_amount
 from app.services.llm_categorization import CategorySuggestion, suggest_category
 from app.services.storage import get_file_path
+from app.services.weekly_digest import (
+    build_weekly_digest_facts,
+    deterministic_digest_summary,
+    generate_digest_summary,
+    load_digest_recipients,
+    previous_full_week,
+    render_digest_email,
+    send_weekly_digest_email,
+    smtp_delivery_configured,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +51,14 @@ categorization_client = anthropic.AsyncAnthropic(
     max_retries=0,
     timeout=60.0,
 )
+weekly_digest_client = anthropic.AsyncAnthropic(
+    api_key=settings.anthropic_api_key,
+    max_retries=0,
+    timeout=30.0,
+)
+WEEKLY_DIGEST_MAX_DELIVERY_ATTEMPTS = 5
+WEEKLY_DIGEST_DELIVERY_LEASE = timedelta(minutes=30)
+WEEKLY_DIGEST_RETRY_BATCH = 200
 
 EXTENSION_TO_MEDIA_TYPE = {
     ".pdf": "application/pdf",
@@ -557,6 +580,404 @@ async def sweep_pending_categorization(ctx) -> int:
     return enqueued_count
 
 
+async def schedule_weekly_digests(ctx) -> int:
+    """Queue the prior complete UTC week once for every company with recipients."""
+    period_start, period_end = previous_full_week()
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(CompanyMember.company_id)
+            .where(
+                CompanyMember.role.in_([CompanyRole.owner, CompanyRole.accountant])
+            )
+            .distinct()
+            .order_by(CompanyMember.company_id)
+        )
+        company_ids = result.scalars().all()
+
+    redis = ctx["redis"]
+    enqueued = 0
+    duplicate = 0
+    failed = 0
+    for company_id in company_ids:
+        try:
+            job = await redis.enqueue_job(
+                "generate_weekly_digest",
+                str(company_id),
+                period_start.isoformat(),
+                _job_id=f"weekly-digest:{company_id}:{period_start.isoformat()}",
+            )
+            if job is None:
+                duplicate += 1
+            else:
+                enqueued += 1
+        except Exception as error:
+            failed += 1
+            logger.error(
+                "Could not queue weekly digest",
+                extra={
+                    "company_id": str(company_id),
+                    "period_start": period_start.isoformat(),
+                    "error_type": type(error).__name__,
+                },
+            )
+    logger.info(
+        "Weekly digest scheduling complete",
+        extra={
+            "period_start": period_start.isoformat(),
+            "period_end": period_end.isoformat(),
+            "company_count": len(company_ids),
+            "enqueued_count": enqueued,
+            "duplicate_count": duplicate,
+            "failed_count": failed,
+        },
+    )
+    return enqueued
+
+
+async def generate_weekly_digest(ctx, company_id: str, period_start: str) -> str | None:
+    """Compute and persist one idempotent company/week digest, then queue deliveries."""
+    company_uuid = UUID(company_id)
+    week_start = datetime.date.fromisoformat(period_start)
+    if week_start.weekday() != 0:
+        raise ValueError("period_start must be a Monday")
+    week_end = week_start + timedelta(days=6)
+
+    async with AsyncSessionLocal() as db:
+        existing_result = await db.execute(
+            select(WeeklyDigest).where(
+                WeeklyDigest.company_id == company_uuid,
+                WeeklyDigest.period_start == week_start,
+            )
+        )
+        existing = existing_result.scalar_one_or_none()
+        if existing is not None:
+            digest_id = existing.id
+        else:
+            company_result = await db.execute(
+                select(Company).where(Company.id == company_uuid)
+            )
+            company = company_result.scalar_one_or_none()
+            if company is None:
+                logger.warning(
+                    "Weekly digest skipped because company was not found",
+                    extra={"company_id": company_id, "period_start": period_start},
+                )
+                return None
+
+            facts = await build_weekly_digest_facts(
+                db, company_id=company_uuid, period_start=week_start
+            )
+            recipients = await load_digest_recipients(db, company_id=company_uuid)
+            await db.commit()
+            client = ctx.get("weekly_digest_client", weekly_digest_client)
+            summary: str | None = None
+            try:
+                summary = await generate_digest_summary(
+                    client, model=settings.weekly_digest_model, facts=facts
+                )
+            except Exception as error:
+                logger.warning(
+                    "Weekly digest summary model failed; using deterministic summary",
+                    extra={
+                        "company_id": company_id,
+                        "period_start": period_start,
+                        "error_type": type(error).__name__,
+                    },
+                )
+            summary_source = "llm" if summary else "deterministic"
+            summary = summary or deterministic_digest_summary(facts)
+            digest_candidate_id = uuid4()
+            inserted = await db.execute(
+                pg_insert(WeeklyDigest)
+                .values(
+                    id=digest_candidate_id,
+                    company_id=company_uuid,
+                    period_start=week_start,
+                    period_end=week_end,
+                    facts=facts,
+                    summary=summary,
+                    summary_source=summary_source,
+                )
+                .on_conflict_do_nothing(
+                    index_elements=[WeeklyDigest.company_id, WeeklyDigest.period_start]
+                )
+                .returning(WeeklyDigest.id)
+            )
+            digest_id = inserted.scalar_one_or_none()
+            if digest_id is not None:
+                initial_status = "pending" if smtp_delivery_configured() else "not_configured"
+                db.add_all(
+                    [
+                        WeeklyDigestDelivery(
+                            digest_id=digest_id,
+                            user_id=user_id,
+                            email_address=email,
+                            status=initial_status,
+                        )
+                        for user_id, email in recipients
+                    ]
+                )
+            else:
+                # Another worker won the company/week uniqueness race; reuse its row.
+                await db.flush()
+                conflict_result = await db.execute(
+                    select(WeeklyDigest.id).where(
+                        WeeklyDigest.company_id == company_uuid,
+                        WeeklyDigest.period_start == week_start,
+                    )
+                )
+                digest_id = conflict_result.scalar_one_or_none()
+            await db.commit()
+            if digest_id is None:
+                logger.error(
+                    "Weekly digest could not be persisted",
+                    extra={"company_id": company_id, "period_start": period_start},
+                )
+                return None
+
+    if smtp_delivery_configured():
+        async with AsyncSessionLocal() as db:
+            # A digest made while SMTP was unavailable can be delivered after setup.
+            await db.execute(
+                update(WeeklyDigestDelivery)
+                .where(
+                    WeeklyDigestDelivery.digest_id == digest_id,
+                    WeeklyDigestDelivery.status == "not_configured",
+                )
+                .values(status="pending", updated_at=func.now())
+            )
+            await db.commit()
+            result = await db.execute(
+                select(WeeklyDigestDelivery.id, WeeklyDigestDelivery.attempt_count)
+                .where(
+                    WeeklyDigestDelivery.digest_id == digest_id,
+                    WeeklyDigestDelivery.status.in_(["pending", "failed"]),
+                    WeeklyDigestDelivery.attempt_count
+                    < WEEKLY_DIGEST_MAX_DELIVERY_ATTEMPTS,
+                )
+                .order_by(WeeklyDigestDelivery.id)
+            )
+            delivery_rows = list(result)
+        redis = ctx["redis"]
+        for delivery_id, attempt_count in delivery_rows:
+            try:
+                await redis.enqueue_job(
+                    "deliver_weekly_digest",
+                    str(delivery_id),
+                    _job_id=f"weekly-digest-delivery:{delivery_id}:{attempt_count}",
+                )
+            except Exception as error:
+                logger.error(
+                    "Could not queue weekly digest delivery",
+                    extra={
+                        "digest_id": str(digest_id),
+                        "delivery_id": str(delivery_id),
+                        "error_type": type(error).__name__,
+                    },
+                )
+    logger.info(
+        "Weekly digest generated",
+        extra={
+            "digest_id": str(digest_id),
+            "company_id": company_id,
+            "period_start": period_start,
+            "period_end": week_end.isoformat(),
+        },
+    )
+    return str(digest_id)
+
+
+async def deliver_weekly_digest(ctx, delivery_id: str) -> None:
+    """Claim one outbox row, send privately, and record success or retryable failure."""
+    delivery_uuid = UUID(delivery_id)
+    now = datetime.datetime.now(datetime.timezone.utc)
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(WeeklyDigestDelivery)
+            .where(WeeklyDigestDelivery.id == delivery_uuid)
+            .with_for_update()
+        )
+        delivery = result.scalar_one_or_none()
+        if delivery is None or delivery.status == "sent":
+            return
+        if delivery.attempt_count >= WEEKLY_DIGEST_MAX_DELIVERY_ATTEMPTS:
+            return
+        if delivery.status == "sending" and delivery.updated_at > now - WEEKLY_DIGEST_DELIVERY_LEASE:
+            return
+        if not smtp_delivery_configured():
+            delivery.status = "not_configured"
+            delivery.updated_at = now
+            await db.commit()
+            return
+        digest_result = await db.execute(
+            select(WeeklyDigest).where(WeeklyDigest.id == delivery.digest_id)
+        )
+        digest = digest_result.scalar_one_or_none()
+        company_result = await db.execute(
+            select(Company.name).where(Company.id == digest.company_id)
+        ) if digest is not None else None
+        if digest is None or company_result is None:
+            delivery.status = "failed"
+            delivery.last_error_code = "digest_missing"
+            delivery.updated_at = now
+            await db.commit()
+            return
+        company_name = company_result.scalar_one_or_none() or "your company"
+        membership_result = await db.execute(
+            select(CompanyMember.id).where(
+                CompanyMember.company_id == digest.company_id,
+                CompanyMember.user_id == delivery.user_id,
+                CompanyMember.role.in_([CompanyRole.owner, CompanyRole.accountant]),
+            )
+        )
+        if membership_result.scalar_one_or_none() is None:
+            await db.delete(delivery)
+            await db.commit()
+            logger.info(
+                "Weekly digest delivery skipped after recipient role change",
+                extra={
+                    "delivery_id": delivery_id,
+                    "digest_id": str(digest.id),
+                    "company_id": str(digest.company_id),
+                    "user_id": str(delivery.user_id),
+                },
+            )
+            return
+        email_result = await db.execute(
+            select(User.email).where(User.id == delivery.user_id)
+        )
+        current_email = email_result.scalar_one_or_none()
+        if current_email is None:
+            await db.delete(delivery)
+            await db.commit()
+            return
+        delivery.email_address = current_email
+        delivery.status = "sending"
+        delivery.attempt_count += 1
+        delivery.last_error_code = None
+        delivery.updated_at = now
+        period_start = digest.period_start
+        period_end = digest.period_end
+        body = render_digest_email(
+            company_name=company_name,
+            period_start=period_start,
+            period_end=period_end,
+            summary=digest.summary,
+            facts=digest.facts,
+        )
+        recipient = delivery.email_address
+        subject_company = " ".join(company_name.split())[:100]
+        subject = (
+            f"FinPilot weekly finance digest — {subject_company} — "
+            f"{period_start.isoformat()} to {period_end.isoformat()}"
+        )
+        await db.commit()
+
+    sender = ctx.get("send_weekly_digest_email", send_weekly_digest_email)
+    try:
+        await sender(recipient=recipient, subject=subject, body=body)
+    except Exception as error:
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(WeeklyDigestDelivery)
+                .where(WeeklyDigestDelivery.id == delivery_uuid)
+                .values(
+                    status="failed",
+                    last_error_code=type(error).__name__[:50],
+                    updated_at=func.now(),
+                )
+            )
+            await db.commit()
+        logger.error(
+            "Weekly digest email delivery failed",
+            extra={
+                "delivery_id": delivery_id,
+                "digest_id": str(delivery.digest_id),
+                "user_id": str(delivery.user_id),
+                "attempt_count": delivery.attempt_count,
+                "error_type": type(error).__name__,
+            },
+        )
+        return
+
+    async with AsyncSessionLocal() as db:
+        await db.execute(
+            update(WeeklyDigestDelivery)
+            .where(WeeklyDigestDelivery.id == delivery_uuid)
+            .values(
+                status="sent",
+                sent_at=func.now(),
+                updated_at=func.now(),
+                last_error_code=None,
+            )
+        )
+        await db.commit()
+    logger.info(
+        "Weekly digest email delivered",
+        extra={
+            "delivery_id": delivery_id,
+            "digest_id": str(delivery.digest_id),
+            "company_id": str(digest.company_id),
+            "user_id": str(delivery.user_id),
+            "period_start": period_start.isoformat(),
+            "attempt_count": delivery.attempt_count,
+        },
+    )
+
+
+async def sweep_weekly_digest_deliveries(ctx) -> int:
+    """Requeue pending or retryable per-recipient outbox rows."""
+    if not smtp_delivery_configured():
+        return 0
+    now = datetime.datetime.now(datetime.timezone.utc)
+    stale_before = now - WEEKLY_DIGEST_DELIVERY_LEASE
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(WeeklyDigestDelivery.id, WeeklyDigestDelivery.attempt_count)
+            .join(WeeklyDigest, WeeklyDigest.id == WeeklyDigestDelivery.digest_id)
+            .where(
+                WeeklyDigestDelivery.attempt_count
+                < WEEKLY_DIGEST_MAX_DELIVERY_ATTEMPTS,
+                WeeklyDigest.period_start >= now.date() - timedelta(days=60),
+                or_(
+                    WeeklyDigestDelivery.status.in_(
+                        ["pending", "failed", "not_configured"]
+                    ),
+                    and_(
+                        WeeklyDigestDelivery.status == "sending",
+                        WeeklyDigestDelivery.updated_at < stale_before,
+                    ),
+                ),
+            )
+            .order_by(WeeklyDigestDelivery.updated_at, WeeklyDigestDelivery.id)
+            .limit(WEEKLY_DIGEST_RETRY_BATCH)
+        )
+        deliveries = list(result)
+    redis = ctx["redis"]
+    enqueued = 0
+    for delivery_id, attempt_count in deliveries:
+        try:
+            job = await redis.enqueue_job(
+                "deliver_weekly_digest",
+                str(delivery_id),
+                _job_id=f"weekly-digest-delivery:{delivery_id}:{attempt_count}",
+            )
+            enqueued += int(job is not None)
+        except Exception as error:
+            logger.error(
+                "Could not requeue weekly digest email",
+                extra={
+                    "delivery_id": str(delivery_id),
+                    "error_type": type(error).__name__,
+                },
+            )
+    logger.info(
+        "Weekly digest delivery sweep complete",
+        extra={"found_count": len(deliveries), "enqueue_count": enqueued},
+    )
+    return enqueued
+
+
 async def sample_task(ctx, message: str):
     logger.info(f"Worker received: {message}")
     return f"processed: {message}"
@@ -571,11 +992,18 @@ async def shutdown(ctx):
     logger.info("Worker shutting down")
     await categorization_client.close()
     await anthropic_client.close()
+    await weekly_digest_client.close()
     await engine.dispose()
 
 
 class WorkerSettings:
-    functions = [sample_task, extract_invoice, categorize_transaction]
+    functions = [
+        sample_task,
+        extract_invoice,
+        categorize_transaction,
+        generate_weekly_digest,
+        deliver_weekly_digest,
+    ]
     cron_jobs = [
         cron(
             sweep_pending_categorization,
@@ -583,7 +1011,24 @@ class WorkerSettings:
             second=0,
             run_at_startup=True,
             unique=True,
-        )
+        ),
+        cron(
+            schedule_weekly_digests,
+            weekday={0},
+            hour={8},
+            minute={0},
+            second=0,
+            run_at_startup=False,
+            unique=True,
+        ),
+        cron(
+            sweep_weekly_digest_deliveries,
+            hour={0, 6, 12, 18},
+            minute={0},
+            second=0,
+            run_at_startup=False,
+            unique=True,
+        ),
     ]
     max_tries = settings.categorization_max_tries
     on_startup = startup

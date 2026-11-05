@@ -7,7 +7,7 @@ Repository facts below were checked against the source and configuration. Histor
 - **API — verified:** FastAPI with Pydantic v2 schemas; routes are mounted under `/api/v1`.
 - **Data — verified:** PostgreSQL-oriented SQLAlchemy models and async sessions, `asyncpg`, and Alembic migrations. The Compose database image is PostgreSQL 16.
 - **Jobs — verified:** Redis and an arq worker. Compose defines PostgreSQL, Redis, and the worker; it does not define an API service.
-- **LLM — verified:** The invoice worker and financial Q&A planner call Anthropic's configurable Haiku-class model. The Q&A planner is configured separately and receives only a question plus allowed expense category names.
+- **LLM — verified:** The invoice, categorization, financial Q&A, anomaly explanation, and weekly digest workers call Anthropic's configurable Haiku-class model. Q&A receives only a question plus allowed expense category names; digest summarization receives computed aggregate facts.
 - **Storage — verified:** Uploaded files are written to a local upload directory; the database stores a file reference. The service boundary is intended to make a future storage-backend change local to that service.
 - **Auth — verified:** JWT-based authentication using the configured security dependencies; company memberships carry owner, accountant, or viewer roles.
 
@@ -33,7 +33,7 @@ Repository facts below were checked against the source and configuration. Histor
 - A bank transaction/reference ID, when supplied, is the company-scoped duplicate key. Otherwise the key uses the exact file SHA-256 and record number. This makes exact file retries safe and preserves identical-looking separate purchases; a changed re-export without stable IDs may import the same transactions again.
 - A database unique constraint and `ON CONFLICT DO NOTHING` protect against concurrent retries. Per-row results are `imported`, `duplicate`, or `rejected`; when new rows are imported, the original CSV is retained by the storage service and each transaction's `raw_reference` points to its record. Duplicate-only and all-rejected uploads do not create additional files. Pending rows are enqueued only after commit and enqueue failures leave them recoverable by the existing sweeper.
 
-Weekly digest generation was not found.
+10. A Monday 08:00 UTC arq cron schedules one prior-full-week digest per company with an owner or accountant. A worker computes company-scoped cash-flow totals, top categorized expenses, and month-to-date budget facts in bounded SQL, then persists one digest per company/week. It optionally asks Anthropic for constrained qualitative wording from those aggregate facts; deterministic wording is used on provider or validation failure. A per-recipient outbox sends separate email messages to current owners and accountants, with bounded retries and stale-send recovery. Missing SMTP configuration leaves the digest persisted and readable, with delivery marked `not_configured`.
 
 ### Financial Q&A contract
 
@@ -61,17 +61,25 @@ Weekly digest generation was not found.
 - The scan examines at most 1,000 recent expenses and returns at most 20 anomalies, with truncation flags. Long descriptions are capped at 250 characters in results.
 - One constrained Anthropic call may phrase the detected comparisons. It receives only flagged descriptions/category labels and the backend's precomputed comparison statement, not amounts or history. Numeric/currency claims and malformed output are rejected. Redis limits model explanations per user/company; unavailable or rate-limited model calls use deterministic explanations instead.
 
+### Weekly digest contract
+
+- Every Monday at 08:00 UTC, the worker schedules the previous complete Monday–Sunday period. A unique `(company_id, period_start)` constraint and stable arq job IDs make generation idempotent.
+- Facts include weekly and prior-week inflow, outflow, net cash flow, and transaction counts; the five largest categorized expense totals; and month-to-date budget versus actual through the week end for the month containing that end date. Amounts remain in the company's accounting currency; no FX conversion occurs. SQL is company-scoped and each statement has a 5-second timeout.
+- The Anthropic summary tool receives only computed aggregate facts (including category labels), never transaction descriptions or rows. The app accepts only one short, numeric-free summary; malformed, numeric, or failed output uses deterministic prose. Every financial figure in the email is rendered from saved backend facts.
+- `GET /companies/{company_id}/digests/weekly` returns the latest digest, or a Monday `period_start` may select a particular week. Any current company member may read it; the delivery status is only for that requesting member.
+- Delivery uses a separate outbox row per owner/accountant and sends one private email at a time. The worker rechecks that the user still has a delivery role and refreshes the current email before sending. SMTP settings are provider-agnostic; without host/from settings the digest remains persisted with `not_configured` status. SMTP failures are retried at most five times with a six-hour sweeper and a 30-minute stale-send lease. A process crash after SMTP accepts a message but before success is saved can cause a duplicate email on retry.
+
 ## Repository structure
 
 ```text
 app/
-  api/routes/       FastAPI auth, company, category, transaction, invoice, budget, metric, chat, and insight routes
+  api/routes/       FastAPI auth, company, category, transaction, invoice, budget, metric, chat, insight, and digest routes
   core/             settings, database, and security setup
-  models/           SQLAlchemy entities, including ChatQuery
-  schemas/          Pydantic request/response schemas
+  models/           SQLAlchemy entities, including ChatQuery and weekly digest/outbox records
+  schemas/          Pydantic request/response schemas, including weekly digests
   scripts/          category seed script
-  services/         local file storage, CSV parsing, cash-flow math, financial Q&A planning/querying, rule-based and LLM categorization, and category-scope validation
-  worker.py         arq tasks, including invoice extraction
+  services/         local file storage, CSV parsing, cash-flow math, financial Q&A, weekly digest aggregation/email, rule-based and LLM categorization, and category-scope validation
+  worker.py         arq tasks, including invoice extraction, categorization, and weekly digest generation/delivery
 alembic/            schema migration scripts
 docs/               requirements, architecture, engineering, learning, and handoff docs
 docker-compose.yml  PostgreSQL, Redis, and worker services
@@ -89,7 +97,7 @@ docker-compose.yml  PostgreSQL, Redis, and worker services
 - **Verified:** The default categorization threshold is 0.85 and configurable, as are the model and maximum attempts. The manual evaluation harness fixes its precision target at 0.95 and is not run by CI.
 - **Verified:** Pytest unit and PostgreSQL API/worker tests exist. The suite was run against the guarded `finpilot_test` database; no real Anthropic call is made by tests. One warning remains from the installed AnyIO pytest plugin's use of a deprecated pytest alias.
 
-The category/categorization, CSV import fingerprint, and financial metric index migrations were manually reviewed and each was applied, downgraded, and reapplied on `finpilot_test`. The Q&A audit migration was manually reviewed and applied to `finpilot_test` by the test setup. Application database state is unresolved. No schema migration was added in the preceding baseline-hardening milestone.
+The category/categorization, CSV import fingerprint, and financial metric index migrations were manually reviewed and each was applied, downgraded, and reapplied on `finpilot_test`. The Q&A audit migration and weekly digest/outbox migration were manually reviewed and applied to `finpilot_test` by the test setup. Application database state is unresolved; no application database migration was run for this task. No schema migration was added in the preceding baseline-hardening milestone.
 
 ## Layer 2 — LLM categorization fallback
 
