@@ -7,7 +7,7 @@ Repository facts below were checked against the source and configuration. Histor
 - **API — verified:** FastAPI with Pydantic v2 schemas; routes are mounted under `/api/v1`.
 - **Data — verified:** PostgreSQL-oriented SQLAlchemy models and async sessions, `asyncpg`, and Alembic migrations. The Compose database image is PostgreSQL 16.
 - **Jobs — verified:** Redis and an arq worker. Compose defines PostgreSQL, Redis, and the worker; it does not define an API service.
-- **LLM — verified:** The invoice worker calls Anthropic's `claude-haiku-4-5-20251001` model for document/image extraction.
+- **LLM — verified:** The invoice worker and financial Q&A planner call Anthropic's configurable Haiku-class model. The Q&A planner is configured separately and receives only a question plus allowed expense category names.
 - **Storage — verified:** Uploaded files are written to a local upload directory; the database stores a file reference. The service boundary is intended to make a future storage-backend change local to that service.
 - **Auth — verified:** JWT-based authentication using the configured security dependencies; company memberships carry owner, accountant, or viewer roles.
 
@@ -21,20 +21,56 @@ Repository facts below were checked against the source and configuration. Histor
 4. Transaction creation applies whole-word, longest-keyword-first rules only when the transaction sign and category kind agree. A miss is committed as `pending` before `categorize_transaction` is enqueued. Queue failures leave the row pending; an arq cron sweeper retries stale pending rows.
 5. The categorization worker loads the transaction first, derives company and direction from the stored row, and reads only global and same-company categories of the matching kind. The Anthropic call uses a forced tool with an enum of category names; the service has no database access. A conditional update applies high-confidence results or sends uncertain/invalid results to review. Retries use arq only, with SDK retries disabled for this client.
 6. Owners and accountants can accept a review suggestion or override a category. Viewers can read the review queue. Manual changes set `user` source; accepted suggestions retain `llm_confirmed` source.
-7. Transaction, invoice, budget, and category creation plus invoice upload require owner or accountant membership. Category references on transactions and budgets, and parent-category references, are restricted to global or same-company categories. Category reads include global defaults.
+7. Transaction, invoice, budget, and category creation plus invoice upload and CSV import require owner or accountant membership. Category references on transactions and budgets, and parent-category references, are restricted to global or same-company categories. Category reads include global defaults.
+8. Bank statement CSVs are parsed synchronously at `POST /transactions/import-csv` with a 5 MiB and 1,000-row limit so the response can report each row. Valid rows use the existing rule categorizer, then commit before pending rows are queued for LLM categorization. Invalid rows are reported independently; malformed files are rejected before any writes.
+9. Read-only cash-flow and budget-versus-actual endpoints use company-scoped SQL aggregation. Cash-flow reporting supports daily/monthly buckets, fills empty periods, and uses bounded inclusive date ranges. Runway is calculated only when a caller supplies a cash balance for the range end.
 
-The `ChatQuery` model exists, but no query agent or chat route was found. Dashboard aggregation, anomaly detection, digest generation, and CSV ingestion were also not found.
+### CSV ingestion contract
+
+- Required columns map from common aliases for transaction date and description, plus either one signed amount column or both debit and credit columns. Header matching ignores case and normalizes spaces, underscores, and hyphens.
+- Amounts are decimal values with at most two fractional digits and the transaction model's precision limit. A credit is positive (inflow), a debit is negative (outflow). Currency conversion is not performed; the statement must already use the company's accounting currency.
+- Dates accept ISO (`YYYY-MM-DD`), day-first (`DD/MM/YYYY`, `DD-MM-YYYY`), and month-first slash dates when the first component exceeds 12. Ambiguous slash dates are day-first.
+- A bank transaction/reference ID, when supplied, is the company-scoped duplicate key. Otherwise the key uses the exact file SHA-256 and record number. This makes exact file retries safe and preserves identical-looking separate purchases; a changed re-export without stable IDs may import the same transactions again.
+- A database unique constraint and `ON CONFLICT DO NOTHING` protect against concurrent retries. Per-row results are `imported`, `duplicate`, or `rejected`; when new rows are imported, the original CSV is retained by the storage service and each transaction's `raw_reference` points to its record. Duplicate-only and all-rejected uploads do not create additional files. Pending rows are enqueued only after commit and enqueue failures leave them recoverable by the existing sweeper.
+
+Weekly digest generation was not found.
+
+### Financial Q&A contract
+
+- `POST /companies/{company_id}/chat/query` requires company membership; viewers can use this read-only route. A Redis counter limits each user to 10 requests per company per minute by default. If Redis is unavailable, the endpoint fails closed.
+- The Anthropic client receives the question and allowed expense category names. A forced `select_financial_query` tool can choose only a fixed query type, period, and optional allowed category name. Extra fields, SQL, invalid categories, or incompatible query/period combinations are rejected.
+- Application code runs bounded, company-scoped SQLAlchemy queries. The supported plans are cash-flow summary, expenses by category, largest expenses, and this/last-month budget versus actual. Category lists and expense results are capped; expense descriptions are truncated to 250 characters.
+- Each query transaction sets a 3-second PostgreSQL statement timeout for its statements. The planner request has a 30-second SDK timeout and SDK retries are disabled.
+- The model receives no transaction rows and does not generate SQL or financial facts. Response answers are formatted deterministically from database results. Unsupported or invalid plans do not execute a financial query.
+- `ChatQuery` records the question, validated plan, result data, executed flag, and error code; `generated_sql` remains null. Audit rows are saved before the model request so provider failures remain recorded. The audit fields and company/created-at index were added by a reviewed migration applied to `finpilot_test` during the test run.
+
+### Financial metrics contract
+
+- `GET /companies/{company_id}/metrics/cash-flow` defaults to a rolling 365-day window ending on the current UTC date. `start_date` and `end_date` are inclusive, and the range may contain at most 366 dates. Buckets are monthly by default, with daily granularity available; empty buckets contain zero totals.
+- Inflows are positive amounts, outflows are reported as positive magnitudes, and net cash flow is inflows minus outflows. Average monthly outflow and net burn scale the selected range to an average calendar month of 30.436875 days. Negative net burn means the company generated cash during that range.
+- Runway is `cash_balance / positive average monthly net burn`, rounded to two decimals. The cash balance is optional and represents the company's balance as of `end_date`. Runway is unavailable without a supplied balance or when there is no positive net burn; the response includes the reason.
+- `GET /companies/{company_id}/metrics/budget-vs-actual?period=YYYY-MM` returns each budgeted category for that month. Expense actuals sum the absolute value of negative transactions; income actuals sum positive transactions. Only transactions assigned to a budgeted category are included. Duplicate budget rows for one category/month are combined.
+- Aggregate queries run in PostgreSQL with `(company_id, date)` and `(company_id, period)` indexes. Redis caching is deferred in v1 to keep successful writes immediately reflected; add caching only with measured need and a reliable freshness/invalidation design.
+
+### Spending anomaly contract
+
+- `GET /companies/{company_id}/insights/anomalies` computes a read-only report on demand; anomaly rows are not persisted. Any company member may read the report.
+- By default, it scans the latest 30 UTC dates against the preceding 180 dates. Request bounds allow a 1–90 day scan window and a 30–730 day baseline window. The company/date index scopes all transaction reads; each SQL statement has a 3-second PostgreSQL timeout.
+- Negative transactions are treated as expenses. A normalized transaction description is used as a merchant proxy when at least three historical matches exist. Otherwise, the detector compares against the same valid company/global expense category when at least three historical transactions exist.
+- A transaction is flagged when it is at least three times the historical mean and at least three population standard deviations above it. If historical standard deviation is zero, the multiplier rule is sufficient. Results include the baseline count, average, multiplier, and z-score where defined.
+- The scan examines at most 1,000 recent expenses and returns at most 20 anomalies, with truncation flags. Long descriptions are capped at 250 characters in results.
+- One constrained Anthropic call may phrase the detected comparisons. It receives only flagged descriptions/category labels and the backend's precomputed comparison statement, not amounts or history. Numeric/currency claims and malformed output are rejected. Redis limits model explanations per user/company; unavailable or rate-limited model calls use deterministic explanations instead.
 
 ## Repository structure
 
 ```text
 app/
-  api/routes/       FastAPI auth, company, category, transaction, invoice, budget routes
+  api/routes/       FastAPI auth, company, category, transaction, invoice, budget, metric, chat, and insight routes
   core/             settings, database, and security setup
   models/           SQLAlchemy entities, including ChatQuery
   schemas/          Pydantic request/response schemas
   scripts/          category seed script
-  services/         local file storage, rule-based and LLM categorization, and category-scope validation
+  services/         local file storage, CSV parsing, cash-flow math, financial Q&A planning/querying, rule-based and LLM categorization, and category-scope validation
   worker.py         arq tasks, including invoice extraction
 alembic/            schema migration scripts
 docs/               requirements, architecture, engineering, learning, and handoff docs
@@ -45,14 +81,15 @@ docker-compose.yml  PostgreSQL, Redis, and worker services
 
 - **Verified implementation / Handoff intent:** PostgreSQL is the source of persisted financial records; application code performs extraction parsing and persistence. The handoff's broader rule that LLMs never calculate or write to the database is a project constraint to preserve.
 - **Handoff decision:** arq was selected for asynchronous work; local storage is the current backend, with S3 considered later. The handoff says the API runs natively on Windows while infrastructure and the worker run in Docker. Compose confirms there is no API service, but the actual host runtime was not tested.
-- **Handoff decision:** Future AI features should use company-scoped, restricted data access and deterministic calculations. These features are not yet implemented.
-- **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is used by categorization and will be used by financial aggregates, consistent with the existing expense fixtures and project plan.
+- **Verified:** Financial Q&A uses a constrained planner and fixed read-only queries. It sends no transaction records to the model; the API formats answers from query results in application code.
+- **Verified:** Spending anomaly detection uses company-scoped historical vendor/category baselines and deterministic thresholds. The model only phrases already-detected comparisons; the backend supplies every financial figure and falls back to deterministic explanations.
+- **Verified decision:** Positive transaction amounts represent inflows; negative amounts represent outflows. This convention is used by categorization and financial metrics, consistent with the existing expense fixtures and project plan.
 - **Verified:** Financial request schemas reject amounts that exceed the database's two-decimal, 12-digit precision.
-- **Verified:** Categories carry an `income` or `expense` kind. Transactions carry categorization status, provenance, suggestion, and confidence. The category/categorization migration was manually reviewed and its upgrade/downgrade cycle was exercised on `finpilot_test` only.
+- **Verified:** Categories carry an `income` or `expense` kind. Transactions carry categorization status, provenance, suggestion, and confidence, plus a company-scoped import fingerprint for CSV idempotency. The categorization, CSV fingerprint, and financial-metric index migrations were manually reviewed and their upgrade/downgrade cycles were exercised on `finpilot_test` only.
 - **Verified:** The default categorization threshold is 0.85 and configurable, as are the model and maximum attempts. The manual evaluation harness fixes its precision target at 0.95 and is not run by CI.
 - **Verified:** Pytest unit and PostgreSQL API/worker tests exist. The suite was run against the guarded `finpilot_test` database; no real Anthropic call is made by tests. One warning remains from the installed AnyIO pytest plugin's use of a deprecated pytest alias.
 
-The category/categorization migration is present and was applied, downgraded, and reapplied on `finpilot_test`; application database state is unresolved. No schema migration was added in the preceding baseline-hardening milestone.
+The category/categorization, CSV import fingerprint, and financial metric index migrations were manually reviewed and each was applied, downgraded, and reapplied on `finpilot_test`. The Q&A audit migration was manually reviewed and applied to `finpilot_test` by the test setup. Application database state is unresolved. No schema migration was added in the preceding baseline-hardening milestone.
 
 ## Layer 2 — LLM categorization fallback
 
@@ -66,7 +103,6 @@ The LLM never invents categories, never does arithmetic, and never writes to the
 **Out of scope (v1):**
 - Batching many transactions per LLM call
 - Per-company learned rules ("vendor X is always Y")
-- CSV import
 - Invoice-to-transaction posting (separate design)
 - Re-categorizing historical data
 - Embeddings / RAG

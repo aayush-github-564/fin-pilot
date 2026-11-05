@@ -1,13 +1,28 @@
 import uuid
+from datetime import date
 from decimal import Decimal
-from alembic.environment import Optional
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+
+BudgetPeriod = Annotated[
+    str, StringConstraints(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+]
 
 
 class BudgetCreate(BaseModel):
     category_id: uuid.UUID
-    period: str
-    limit_amount: Decimal = Field(max_digits=12, decimal_places=2)
+    period: BudgetPeriod
+    limit_amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+    @field_validator("period")
+    @classmethod
+    def period_must_be_a_real_month(cls, value: str) -> str:
+        try:
+            date.fromisoformat(f"{value}-01")
+        except ValueError as error:
+            raise ValueError("period must be a valid YYYY-MM month") from error
+        return value
 
 
 class BudgetRead(BaseModel):
@@ -20,8 +35,19 @@ class BudgetRead(BaseModel):
     limit_amount: Decimal = Field(max_digits=12, decimal_places=2)
 
 class BudgetUpdate(BaseModel):
-    category_id: Optional[uuid.UUID] = None
-    period: Optional[str] = None
-    limit_amount: Optional[Decimal] = Field(
-        default=None, max_digits=12, decimal_places=2
+    category_id: uuid.UUID | None = None
+    period: BudgetPeriod | None = None
+    limit_amount: Decimal | None = Field(
+        default=None, gt=0, max_digits=12, decimal_places=2
     )
+
+    @field_validator("period")
+    @classmethod
+    def period_must_be_a_real_month(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        try:
+            date.fromisoformat(f"{value}-01")
+        except ValueError as error:
+            raise ValueError("period must be a valid YYYY-MM month") from error
+        return value

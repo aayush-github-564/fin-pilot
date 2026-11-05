@@ -70,11 +70,11 @@ async def update_budget(
         raise HTTPException(status_code=404, detail="Budget not found")
 
     for field, value in payload.model_dump(exclude_unset=True).items():
+        if value is None:
+            raise HTTPException(
+                status_code=422, detail=f"Budget {field} cannot be null"
+            )
         if field == "category_id":
-            if value is None:
-                raise HTTPException(
-                    status_code=422, detail="Budget category cannot be null"
-                )
             await validate_category_scope(db, company_id, value)
         setattr(budget, field, value)
 

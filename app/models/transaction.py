@@ -11,6 +11,7 @@ from sqlalchemy import (
     Index,
     Numeric,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -51,6 +52,12 @@ class Transaction(Base):
             "company_id",
             "categorization_status",
         ),
+        Index("ix_transactions_company_date", "company_id", "date"),
+        UniqueConstraint(
+            "company_id",
+            "import_fingerprint",
+            name="uq_transactions_company_import_fingerprint",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -88,4 +95,5 @@ class Transaction(Base):
         Numeric(3, 2), nullable=True
     )
     raw_reference: Mapped[str | None] = mapped_column(String, nullable=True)
+    import_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

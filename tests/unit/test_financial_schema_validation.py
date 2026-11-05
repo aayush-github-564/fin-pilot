@@ -53,3 +53,25 @@ def test_financial_amounts_reject_values_outside_database_precision(
 ) -> None:
     with pytest.raises(ValidationError):
         schema.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    ("period", "limit_amount"),
+    [
+        ("2026-13", "100.00"),
+        ("0000-01", "100.00"),
+        ("2026-01", "0.00"),
+        ("2026-01", "-1.00"),
+    ],
+)
+def test_budget_period_and_limit_must_be_usable(
+    period: str, limit_amount: str
+) -> None:
+    with pytest.raises(ValidationError):
+        BudgetCreate.model_validate(
+            {
+                "category_id": "00000000-0000-0000-0000-000000000001",
+                "period": period,
+                "limit_amount": limit_amount,
+            }
+        )

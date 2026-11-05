@@ -97,6 +97,8 @@ class FakeArqPool:
     def __init__(self) -> None:
         self.jobs: list[dict[str, object]] = []
         self.closed = False
+        self.counters: dict[str, int] = {}
+        self.expiries: dict[str, int] = {}
 
     async def enqueue_job(
         self, function_name: str, *args: object, _job_id: str | None = None, **kwargs: object
@@ -111,6 +113,34 @@ class FakeArqPool:
 
     async def close(self) -> None:
         self.closed = True
+
+    async def incr(self, key: str) -> int:
+        self.counters[key] = self.counters.get(key, 0) + 1
+        return self.counters[key]
+
+    async def expire(self, key: str, seconds: int) -> bool:
+        self.expiries[key] = seconds
+        return True
+
+
+class FakeChatMessages:
+    def __init__(self) -> None:
+        self.responses: list[object] = []
+        self.calls: list[dict[str, object]] = []
+
+    async def create(self, **kwargs: object) -> object:
+        self.calls.append(kwargs)
+        if not self.responses:
+            raise AssertionError("A test must provide a fake financial Q&A response.")
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+
+class FakeChatClient:
+    def __init__(self) -> None:
+        self.messages = FakeChatMessages()
 
 
 @pytest.fixture(autouse=True)
@@ -167,14 +197,22 @@ def fake_arq_pool() -> FakeArqPool:
     return FakeArqPool()
 
 
+@pytest.fixture
+def fake_chat_client() -> FakeChatClient:
+    return FakeChatClient()
+
+
 @pytest_asyncio.fixture(loop_scope="session")
-async def async_client(fake_arq_pool: FakeArqPool) -> AsyncIterator[AsyncClient]:
+async def async_client(
+    fake_arq_pool: FakeArqPool, fake_chat_client: FakeChatClient
+) -> AsyncIterator[AsyncClient]:
     from fastapi import FastAPI
     from app.main import app
 
     @asynccontextmanager
     async def fake_lifespan(application: FastAPI) -> AsyncIterator[None]:
         application.state.redis = fake_arq_pool
+        application.state.chat_client = fake_chat_client
         yield
         await fake_arq_pool.close()
 

@@ -1,11 +1,20 @@
+import asyncio
 import logging
 import uuid
-from decimal import Decimal
 from uuid import UUID
 
 from arq import ArqRedis
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import select, update
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
+from sqlalchemy import case, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
@@ -14,20 +23,34 @@ from app.api.deps import (
     get_db,
     require_role,
 )
-from app.models.category import CategoryKind
+from app.models.category import Category, CategoryKind
 from app.models.company_member import CompanyMember
 from app.models.transaction import (
     CategorizationSource,
     CategorizationStatus,
     Transaction,
+    TransactionSource,
 )
 from app.schemas.transaction import (
+    CSVImportRead,
+    CSVImportRowRead,
     TransactionCreate,
     TransactionRead,
     TransactionUpdate,
 )
-from app.services.categorization import category_kind_for_amount, resolve_category_id
+from app.services.categorization import (
+    category_kind_for_amount,
+    match_category,
+    resolve_category_id,
+)
 from app.services.category_scope import validate_category_scope
+from app.services.csv_import import (
+    MAX_CSV_BYTES,
+    CSVImportError,
+    ParsedCSVRow,
+    parse_bank_statement_csv,
+)
+from app.services.storage import save_file
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/companies/{company_id}/transactions", tags=["transactions"])
@@ -47,7 +70,7 @@ async def _enqueue_categorization(
         # The committed row remains pending; the scheduled sweeper can recover it.
         logger.exception(
             "Could not enqueue transaction categorization",
-            extra={"transaction_id": str(transaction_id)},
+            extra={"transaction_id": str(transaction_id), "request_id": request_id},
         )
 
 
@@ -144,6 +167,248 @@ async def list_transactions_for_review(
         .limit(limit)
     )
     return result.scalars().all()
+
+
+@router.post("/import-csv", response_model=CSVImportRead, status_code=200)
+async def import_transactions_csv(
+    company_id: uuid.UUID,
+    request: Request,
+    file: UploadFile = File(...),
+    membership: CompanyMember = Depends(require_role("owner", "accountant")),
+    db: AsyncSession = Depends(get_db),
+    redis: ArqRedis = Depends(get_arq_redis),
+) -> CSVImportRead:
+    content = await file.read(MAX_CSV_BYTES + 1)
+    if len(content) > MAX_CSV_BYTES:
+        raise HTTPException(status_code=413, detail="CSV file exceeds the 5 MiB upload limit")
+    try:
+        parsed = parse_bank_statement_csv(content)
+    except CSVImportError as error:
+        logger.warning(
+            "Bank statement CSV rejected",
+            extra={
+                "request_id": request.state.request_id,
+                "company_id": str(company_id),
+                "error_type": type(error).__name__,
+            },
+        )
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    first_by_fingerprint: dict[str, ParsedCSVRow] = {}
+    duplicate_row_numbers: set[int] = set()
+    for row in parsed.accepted:
+        if row.import_fingerprint in first_by_fingerprint:
+            duplicate_row_numbers.add(row.row_number)
+        else:
+            first_by_fingerprint[row.import_fingerprint] = row
+
+    candidate_rows = list(first_by_fingerprint.values())
+    matched_names = {
+        matched_name
+        for row in candidate_rows
+        if (
+            matched_name := match_category(
+                row.description, category_kind_for_amount(row.amount)
+            )
+        )
+    }
+    category_ids_by_name: dict[str, UUID] = {}
+    if matched_names:
+        category_result = await db.execute(
+            select(Category.name, Category.id).where(
+                Category.company_id.is_(None),
+                Category.kind == CategoryKind.expense,
+                Category.name.in_(matched_names),
+            )
+        )
+        category_ids_by_name = {
+            name: category_id for name, category_id in category_result.all()
+        }
+
+    values_by_fingerprint: dict[str, dict[str, object]] = {}
+    pending_transaction_ids: dict[UUID, str] = {}
+    for row in candidate_rows:
+        kind = category_kind_for_amount(row.amount)
+        rule_name = match_category(row.description, kind)
+        category_id = category_ids_by_name.get(rule_name) if rule_name else None
+        if category_id is not None:
+            categorization_status = CategorizationStatus.done
+            categorization_source = CategorizationSource.rule
+        elif kind is None:
+            categorization_status = CategorizationStatus.needs_review
+            categorization_source = None
+        else:
+            categorization_status = CategorizationStatus.pending
+            categorization_source = None
+
+        transaction_id = uuid.uuid4()
+        values_by_fingerprint[row.import_fingerprint] = {
+            "id": transaction_id,
+            "company_id": company_id,
+            "date": row.transaction_date,
+            "amount": row.amount,
+            "description": row.description,
+            "category_id": category_id,
+            "source": TransactionSource.upload,
+            "categorization_status": categorization_status,
+            "categorization_source": categorization_source,
+            "raw_reference": None,
+            "import_fingerprint": row.import_fingerprint,
+        }
+        if categorization_status == CategorizationStatus.pending:
+            pending_transaction_ids[transaction_id] = request.state.request_id
+
+    inserted_by_fingerprint: dict[str, UUID] = {}
+    newly_inserted_fingerprints: set[str] = set()
+    if values_by_fingerprint:
+        statement = (
+            pg_insert(Transaction)
+            .values(list(values_by_fingerprint.values()))
+            .on_conflict_do_nothing(
+                constraint="uq_transactions_company_import_fingerprint"
+            )
+            .returning(Transaction.id, Transaction.import_fingerprint)
+        )
+        insert_result = await db.execute(statement)
+        inserted_by_fingerprint = {
+            fingerprint: transaction_id
+            for transaction_id, fingerprint in insert_result.all()
+        }
+        newly_inserted_fingerprints = set(inserted_by_fingerprint)
+
+        if newly_inserted_fingerprints:
+            await file.seek(0)
+            file_reference = await save_file(file, company_id, extension=".csv")
+            row_numbers_by_fingerprint = {
+                row.import_fingerprint: row.row_number for row in candidate_rows
+            }
+            raw_references_by_id = {
+                inserted_by_fingerprint[fingerprint]: (
+                    f"csv:{file_reference}#record="
+                    f"{row_numbers_by_fingerprint[fingerprint]}"
+                )
+                for fingerprint in newly_inserted_fingerprints
+            }
+            await db.execute(
+                update(Transaction)
+                .where(Transaction.id.in_(raw_references_by_id))
+                .values(
+                    raw_reference=case(
+                        raw_references_by_id,
+                        value=Transaction.id,
+                        else_=None,
+                    )
+                )
+            )
+
+        duplicate_fingerprints = set(values_by_fingerprint) - set(
+            inserted_by_fingerprint
+        )
+        existing_by_fingerprint: dict[str, UUID] = {}
+        if duplicate_fingerprints:
+            existing_result = await db.execute(
+                select(Transaction.import_fingerprint, Transaction.id).where(
+                    Transaction.company_id == company_id,
+                    Transaction.import_fingerprint.in_(duplicate_fingerprints),
+                )
+            )
+            existing_by_fingerprint = {
+                fingerprint: transaction_id
+                for fingerprint, transaction_id in existing_result.all()
+            }
+        await db.commit()
+        inserted_by_fingerprint.update(existing_by_fingerprint)
+    else:
+        await db.rollback()
+
+    # Only newly returned rows are eligible for categorization; conflict winners
+    # belong to an earlier request and must never be re-enqueued here.
+    committed_insert_ids = {
+        inserted_by_fingerprint[fingerprint]
+        for fingerprint in newly_inserted_fingerprints
+        if inserted_by_fingerprint[fingerprint] in pending_transaction_ids
+    }
+    semaphore = asyncio.Semaphore(20)
+
+    async def enqueue_pending(transaction_id: UUID, request_id: str) -> None:
+        async with semaphore:
+            await _enqueue_categorization(redis, transaction_id, request_id)
+
+    await asyncio.gather(
+        *(
+            enqueue_pending(transaction_id, request_id)
+            for transaction_id, request_id in pending_transaction_ids.items()
+            if transaction_id in committed_insert_ids
+        )
+    )
+
+    outcomes_by_row: dict[int, CSVImportRowRead] = {
+        row.row_number: CSVImportRowRead(
+            row_number=row.row_number,
+            status="rejected",
+            error_code=row.error_code,
+            error_message=row.error_message,
+        )
+        for row in parsed.rejected
+    }
+    seen_fingerprints: set[str] = set()
+    for row in parsed.accepted:
+        transaction_id = inserted_by_fingerprint.get(row.import_fingerprint)
+        is_duplicate = (
+            row.row_number in duplicate_row_numbers
+            or row.import_fingerprint not in newly_inserted_fingerprints
+            or row.import_fingerprint in seen_fingerprints
+        )
+        seen_fingerprints.add(row.import_fingerprint)
+        if is_duplicate:
+            outcomes_by_row[row.row_number] = CSVImportRowRead(
+                row_number=row.row_number,
+                status="duplicate",
+                transaction_id=transaction_id,
+            )
+            continue
+
+        values = values_by_fingerprint[row.import_fingerprint]
+        outcomes_by_row[row.row_number] = CSVImportRowRead(
+            row_number=row.row_number,
+            status="imported",
+            transaction_id=transaction_id,
+            categorization_status=values["categorization_status"],
+        )
+
+    for rejected in parsed.rejected:
+        logger.warning(
+            "Bank statement row rejected",
+            extra={
+                "request_id": request.state.request_id,
+                "company_id": str(company_id),
+                "row_number": rejected.row_number,
+                "error_code": rejected.error_code,
+            },
+        )
+
+    rows = [outcomes_by_row[index] for index in sorted(outcomes_by_row)]
+    imported_count = sum(row.status == "imported" for row in rows)
+    duplicate_count = sum(row.status == "duplicate" for row in rows)
+    rejected_count = sum(row.status == "rejected" for row in rows)
+    logger.info(
+        "Bank statement CSV import completed",
+        extra={
+            "request_id": request.state.request_id,
+            "company_id": str(company_id),
+            "rows_seen": parsed.rows_seen,
+            "imported_count": imported_count,
+            "duplicate_count": duplicate_count,
+            "rejected_count": rejected_count,
+        },
+    )
+    return CSVImportRead(
+        rows_seen=parsed.rows_seen,
+        imported_count=imported_count,
+        duplicate_count=duplicate_count,
+        rejected_count=rejected_count,
+        rows=rows,
+    )
 
 
 @router.post(
