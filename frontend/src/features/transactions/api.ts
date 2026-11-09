@@ -3,11 +3,12 @@ import { api } from "../../api/client";
 import { normalizeApiError } from "../../api/errors";
 
 export type TransactionPage = components["schemas"]["TransactionPageRead"];
-export type TransactionListQuery = Pick<
-  NonNullable<
-    operations["list_transactions_api_v1_companies__company_id__transactions_get"]["parameters"]["query"]
-  >,
-  "offset" | "limit" | "categorization_status"
+export type Transaction = components["schemas"]["TransactionRead"];
+export type Category = components["schemas"]["CategoryRead"];
+export type TransactionCreate = components["schemas"]["TransactionCreate"];
+export type TransactionUpdate = components["schemas"]["TransactionUpdate"];
+export type TransactionListQuery = NonNullable<
+  operations["list_transactions_api_v1_companies__company_id__transactions_get"]["parameters"]["query"]
 >;
 
 export async function listTransactions(
@@ -23,4 +24,62 @@ export async function listTransactions(
   }
   if (!result.data) throw new Error("The server returned no transaction list.");
   return result.data;
+}
+
+export async function listCategories(companyId: string): Promise<Category[]> {
+  const result = await api.GET("/api/v1/companies/{company_id}/categories", {
+    params: { path: { company_id: companyId } },
+  });
+  if (!result.response.ok) {
+    throw await normalizeApiError(result.response, result.error);
+  }
+  if (!result.data) throw new Error("The server returned no categories.");
+  return result.data;
+}
+
+export async function createTransaction(
+  companyId: string,
+  body: TransactionCreate,
+): Promise<Transaction> {
+  const result = await api.POST("/api/v1/companies/{company_id}/transactions", {
+    params: { path: { company_id: companyId } },
+    body,
+  });
+  if (!result.response.ok) {
+    throw await normalizeApiError(result.response, result.error);
+  }
+  if (!result.data) throw new Error("The server returned no saved transaction.");
+  return result.data;
+}
+
+export async function updateTransaction(
+  companyId: string,
+  transactionId: string,
+  body: TransactionUpdate,
+): Promise<Transaction> {
+  const result = await api.PATCH(
+    "/api/v1/companies/{company_id}/transactions/{transaction_id}",
+    {
+      params: { path: { company_id: companyId, transaction_id: transactionId } },
+      body,
+    },
+  );
+  if (!result.response.ok) {
+    throw await normalizeApiError(result.response, result.error);
+  }
+  if (!result.data) throw new Error("The server returned no updated transaction.");
+  return result.data;
+}
+
+export async function deleteTransaction(
+  companyId: string,
+  transactionId: string,
+): Promise<void> {
+  const result = await api.DELETE(
+    "/api/v1/companies/{company_id}/transactions/{transaction_id}",
+    { params: { path: { company_id: companyId, transaction_id: transactionId } } },
+  );
+  if (!result.response.ok) {
+    throw await normalizeApiError(result.response, result.error);
+  }
 }

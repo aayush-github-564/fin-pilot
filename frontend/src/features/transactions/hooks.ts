@@ -1,6 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { listTransactions } from "./api";
+import {
+  createTransaction,
+  deleteTransaction,
+  listCategories,
+  listTransactions,
+  updateTransaction,
+  type TransactionCreate,
+  type TransactionListQuery,
+  type TransactionUpdate,
+} from "./api";
 
 const RECENT_TRANSACTION_LIMIT = 5;
 
@@ -9,6 +18,63 @@ export const recentTransactionsQueryKey = (companyId: string) =>
 
 export const reviewQueueCountQueryKey = (companyId: string) =>
   ["company", companyId, "transactions", "review-count"] as const;
+
+export const transactionListQueryKey = (
+  companyId: string,
+  query: TransactionListQuery,
+) => ["company", companyId, "transactions", "list", query] as const;
+
+export const categoryListQueryKey = (companyId: string) =>
+  ["company", companyId, "categories"] as const;
+
+export function useTransactions(companyId: string, query: TransactionListQuery) {
+  return useQuery({
+    queryKey: transactionListQueryKey(companyId, query),
+    queryFn: () => listTransactions(companyId, query),
+    enabled: Boolean(companyId),
+  });
+}
+
+export function useCategories(companyId: string) {
+  return useQuery({
+    queryKey: categoryListQueryKey(companyId),
+    queryFn: () => listCategories(companyId),
+    enabled: Boolean(companyId),
+  });
+}
+
+function useInvalidateTransactionData(companyId: string) {
+  const queryClient = useQueryClient();
+  return () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["company", companyId, "transactions"] }),
+    queryClient.invalidateQueries({ queryKey: ["company", companyId, "metrics"] }),
+  ]);
+}
+
+export function useCreateTransaction(companyId: string) {
+  const invalidate = useInvalidateTransactionData(companyId);
+  return useMutation({
+    mutationFn: (body: TransactionCreate) => createTransaction(companyId, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateTransaction(companyId: string) {
+  const invalidate = useInvalidateTransactionData(companyId);
+  return useMutation({
+    mutationFn: ({ transactionId, body }: { transactionId: string; body: TransactionUpdate }) =>
+      updateTransaction(companyId, transactionId, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteTransaction(companyId: string) {
+  const invalidate = useInvalidateTransactionData(companyId);
+  return useMutation({
+    mutationFn: (transactionId: string) => deleteTransaction(companyId, transactionId),
+    onSuccess: invalidate,
+  });
+}
 
 export function useRecentTransactions(companyId: string) {
   return useQuery({

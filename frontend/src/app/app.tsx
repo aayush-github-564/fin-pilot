@@ -22,6 +22,9 @@ const CompanySettingsPage = lazy(() =>
 const DashboardPage = lazy(() =>
   import("../features/dashboard/dashboard-page").then((module) => ({ default: module.DashboardPage })),
 );
+const TransactionsPage = lazy(() =>
+  import("../features/transactions/transactions-page").then((module) => ({ default: module.TransactionsPage })),
+);
 
 function LoadPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingState label="Opening FinPilot" />}>{children}</Suspense>;
@@ -73,6 +76,7 @@ export function AppRoutes() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<LoadPage><DashboardPage /></LoadPage>} />
+        <Route path="transactions" element={<LoadPage><TransactionsPage /></LoadPage>} />
         <Route path="settings" element={<LoadPage><CompanySettingsPage /></LoadPage>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
