@@ -34,7 +34,7 @@ This log records milestones and outstanding engineering work, not a file-by-file
 - **Open:** Invoice processing has no distinct `needs_review` status for partial extraction; missing extracted fields are logged and left available for manual editing.
 - **Verified from source:** Required backend features are implemented. The frontend is now active under the current build mandate. Latest full backend suite: 158 passed; one existing AnyIO/pytest deprecation warning remains.
 - **Verified in frontend milestone:** Auth and company shell are in place, including account-level company selection and UI role gating; the remaining product screens and real-backend smoke tests are still outstanding.
-- **Verified in frontend milestone:** The dashboard displays backend cash-flow and budget metrics, respects company-scoped query keys, allows viewer-safe filtering, and includes loading, empty, and retry states. The transaction ledger is now implemented. Review actions, CSV import, chat, anomalies, digests, and should-have screens remain outstanding.
+- **Verified in frontend milestone:** The dashboard displays backend cash-flow and budget metrics, respects company-scoped query keys, allows viewer-safe filtering, and includes loading, empty, and retry states. The transaction ledger and review queue are implemented. CSV import, chat, anomalies, digests, and should-have screens remain outstanding.
 - **Open:** The categorization evaluation harness has not been run against a real labeled sample. The current currency field validates active ISO 4217 codes; the ledger still supports only two decimal places.
 - **Verified — application database state:** The local `finpilot` database was at revision `1a13e12b7aa6`; with explicit one-time user approval for this troubleshooting task, it was upgraded to head `c4fa9d9f20a1`. This exception does not change the frontend architecture's default rule to apply migrations only to `finpilot_test`.
 - **Test warning:** The installed AnyIO pytest plugin uses a deprecated pytest alias; this is dependency-side and does not fail the suite.
@@ -48,6 +48,13 @@ This log records milestones and outstanding engineering work, not a file-by-file
 - A real browser smoke flow passed against the guarded `finpilot_test` database: registration, company-directory loading, workspace creation, and the metrics-backed dashboard. Its synthetic account/workspace remain in `finpilot_test`. No application source fix was needed for this 500.
 - Verification: backend `pytest -q` passed 158 tests (one dependency deprecation warning); frontend tests passed 7/7; typecheck and production build passed; lint had zero errors and three Fast Refresh warnings. The company-list SQL also succeeded on `finpilot` after migration.
 
+## 7. Frontend checkpoint 5 — transaction review queue — 2026-11-09
+
+- Added the company-scoped review route and workspace navigation link. The queue shows transaction details, the suggested category and confidence, and owner/accountant actions to accept or choose an override category. Override options are restricted to income/expense categories matching the signed amount; viewers can inspect the queue without write controls.
+- Accept and override invalidate the company transaction and metrics query families. A 409 invalidates transaction data and displays a stale-review message; mutations explicitly do not retry. Pagination follows the review API's `skip`/`limit` contract, with a page size of 50.
+- No backend changes, dependencies, or migrations were needed. No real LLM calls are involved.
+- Verification: focused review UI tests passed 4/4; complete frontend suite passed 15 tests across 5 files; `npm run typecheck` passed; `npm run lint` exited 0 with the same three Fast Refresh warnings; `npm run build` passed. The review page is lazy-loaded into a 6.76 kB (2.51 kB gzip) chunk. Vitest needed an escalated local-process retry after the sandbox blocked Windows process startup with `spawn EPERM`.
+
 ## Recommended next engineering task
 
-Keep real LLM evaluation manual. Continue the frontend in reviewed milestones; do not commit on the human's behalf. Keep deployment scope to the same-origin app stack required by the frontend architecture.
+Continue with checkpoint 6: CSV import, including the client-side 5 MiB size check, explicit accounting-currency/day-first date assumptions, per-row result reporting, and refresh/poll behavior. Keep real LLM evaluation manual. Continue the frontend in reviewed milestones; do not commit on the human's behalf. Keep deployment scope to the same-origin app stack required by the frontend architecture.

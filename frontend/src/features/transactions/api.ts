@@ -10,6 +10,9 @@ export type TransactionUpdate = components["schemas"]["TransactionUpdate"];
 export type TransactionListQuery = NonNullable<
   operations["list_transactions_api_v1_companies__company_id__transactions_get"]["parameters"]["query"]
 >;
+export type ReviewListQuery = NonNullable<
+  operations["list_transactions_for_review_api_v1_companies__company_id__transactions_review_get"]["parameters"]["query"]
+>;
 
 export async function listTransactions(
   companyId: string,
@@ -23,6 +26,36 @@ export async function listTransactions(
     throw await normalizeApiError(result.response, result.error);
   }
   if (!result.data) throw new Error("The server returned no transaction list.");
+  return result.data;
+}
+
+export async function listTransactionsForReview(
+  companyId: string,
+  query: ReviewListQuery,
+): Promise<Transaction[]> {
+  const result = await api.GET(
+    "/api/v1/companies/{company_id}/transactions/review",
+    { params: { path: { company_id: companyId }, query } },
+  );
+  if (!result.response.ok) {
+    throw await normalizeApiError(result.response, result.error);
+  }
+  if (!result.data) throw new Error("The server returned no review queue.");
+  return result.data;
+}
+
+export async function acceptTransactionSuggestion(
+  companyId: string,
+  transactionId: string,
+): Promise<Transaction> {
+  const result = await api.POST(
+    "/api/v1/companies/{company_id}/transactions/{transaction_id}/accept-suggestion",
+    { params: { path: { company_id: companyId, transaction_id: transactionId } } },
+  );
+  if (!result.response.ok) {
+    throw await normalizeApiError(result.response, result.error);
+  }
+  if (!result.data) throw new Error("The server returned no reviewed transaction.");
   return result.data;
 }
 
