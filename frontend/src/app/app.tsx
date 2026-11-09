@@ -1,12 +1,31 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import { LoadingState } from "../components/ui/feedback";
 import { RedirectAuthenticated, RequireAuthentication, HomeRedirect } from "./guards";
-import { CompanyPickerPage } from "../features/companies/company-picker-page";
-import { CompanyLayout } from "../features/companies/company-layout";
-import { LoginPage } from "../features/auth/login-page";
-import { RegisterPage } from "../features/auth/register-page";
-import { CompanySettingsPage } from "../features/companies/company-settings-page";
-import { DashboardPage } from "../features/dashboard/dashboard-page";
+
+const CompanyPickerPage = lazy(() =>
+  import("../features/companies/company-picker-page").then((module) => ({ default: module.CompanyPickerPage })),
+);
+const CompanyLayout = lazy(() =>
+  import("../features/companies/company-layout").then((module) => ({ default: module.CompanyLayout })),
+);
+const LoginPage = lazy(() =>
+  import("../features/auth/login-page").then((module) => ({ default: module.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import("../features/auth/register-page").then((module) => ({ default: module.RegisterPage })),
+);
+const CompanySettingsPage = lazy(() =>
+  import("../features/companies/company-settings-page").then((module) => ({ default: module.CompanySettingsPage })),
+);
+const DashboardPage = lazy(() =>
+  import("../features/dashboard/dashboard-page").then((module) => ({ default: module.DashboardPage })),
+);
+
+function LoadPage({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<LoadingState label="Opening FinPilot" />}>{children}</Suspense>;
+}
 
 export function AppRoutes() {
   return (
@@ -15,38 +34,46 @@ export function AppRoutes() {
       <Route
         path="/login"
         element={
-          <RedirectAuthenticated>
-            <LoginPage />
-          </RedirectAuthenticated>
+          <LoadPage>
+            <RedirectAuthenticated>
+              <LoginPage />
+            </RedirectAuthenticated>
+          </LoadPage>
         }
       />
       <Route
         path="/register"
         element={
-          <RedirectAuthenticated>
-            <RegisterPage />
-          </RedirectAuthenticated>
+          <LoadPage>
+            <RedirectAuthenticated>
+              <RegisterPage />
+            </RedirectAuthenticated>
+          </LoadPage>
         }
       />
       <Route
         path="/companies"
         element={
-          <RequireAuthentication>
-            <CompanyPickerPage />
-          </RequireAuthentication>
+          <LoadPage>
+            <RequireAuthentication>
+              <CompanyPickerPage />
+            </RequireAuthentication>
+          </LoadPage>
         }
       />
       <Route
         path="/c/:companyId"
         element={
-          <RequireAuthentication>
-            <CompanyLayout />
-          </RequireAuthentication>
+          <LoadPage>
+            <RequireAuthentication>
+              <CompanyLayout />
+            </RequireAuthentication>
+          </LoadPage>
         }
       >
         <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="settings" element={<CompanySettingsPage />} />
+        <Route path="dashboard" element={<LoadPage><DashboardPage /></LoadPage>} />
+        <Route path="settings" element={<LoadPage><CompanySettingsPage /></LoadPage>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
