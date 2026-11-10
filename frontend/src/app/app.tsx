@@ -25,11 +25,17 @@ const DashboardPage = lazy(() =>
 const TransactionsPage = lazy(() =>
   import("../features/transactions/transactions-page").then((module) => ({ default: module.TransactionsPage })),
 );
+const TransactionDetailPage = lazy(() =>
+  import("../features/transactions/transaction-detail-page").then((module) => ({ default: module.TransactionDetailPage })),
+);
 const ReviewQueuePage = lazy(() =>
   import("../features/transactions/review-queue-page").then((module) => ({ default: module.ReviewQueuePage })),
 );
 const ChatPage = lazy(() =>
   import("../features/chat/chat-page").then((module) => ({ default: module.ChatPage })),
+);
+const AnomaliesPage = lazy(() =>
+  import("../features/insights/anomalies-page").then((module) => ({ default: module.AnomaliesPage })),
 );
 
 function LoadPage({ children }: { children: ReactNode }) {
@@ -82,9 +88,11 @@ export function AppRoutes() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<LoadPage><DashboardPage /></LoadPage>} />
+        <Route path="transactions/:transactionId" element={<LoadPage><TransactionDetailPage /></LoadPage>} />
         <Route path="transactions" element={<LoadPage><TransactionsPage /></LoadPage>} />
         <Route path="review" element={<LoadPage><ReviewQueuePage /></LoadPage>} />
         <Route path="chat" element={<LoadPage><ChatPage /></LoadPage>} />
+        <Route path="anomalies" element={<LoadPage><AnomaliesPage /></LoadPage>} />
         <Route path="settings" element={<LoadPage><CompanySettingsPage /></LoadPage>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

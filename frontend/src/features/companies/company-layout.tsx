@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Building2, ClipboardCheck, LayoutDashboard, LogOut, MessageCircle, Settings2 } from "lucide-react";
+import { Activity, ArrowLeftRight, Building2, ClipboardCheck, LayoutDashboard, LogOut, MessageCircle, Settings2 } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from "react-router-dom";
 
 import { Badge } from "../../components/ui/badge";
@@ -68,6 +68,10 @@ function CompanyWorkspace({
           <NavLink className={navigationClass} to={`/c/${company.company_id}/chat`}>
             <MessageCircle aria-hidden="true" className="size-4" />
             Ask FinPilot
+          </NavLink>
+          <NavLink className={navigationClass} to={`/c/${company.company_id}/anomalies`}>
+            <Activity aria-hidden="true" className="size-4" />
+            Spending anomalies
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/settings`}>
             <Settings2 aria-hidden="true" className="size-4" />

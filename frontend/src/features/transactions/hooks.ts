@@ -5,6 +5,7 @@ import {
   acceptTransactionSuggestion,
   createTransaction,
   deleteTransaction,
+  getTransaction,
   importTransactionsCsv,
   listCategories,
   listTransactions,
@@ -48,6 +49,14 @@ export function useTransactions(companyId: string, query: TransactionListQuery) 
     queryKey: transactionListQueryKey(companyId, query),
     queryFn: () => listTransactions(companyId, query),
     enabled: Boolean(companyId),
+  });
+}
+
+export function useTransactionById(companyId: string, transactionId: string) {
+  return useQuery({
+    queryKey: ["company", companyId, "transactions", "detail", transactionId],
+    queryFn: () => getTransaction(companyId, transactionId),
+    enabled: Boolean(companyId && transactionId),
   });
 }
 
