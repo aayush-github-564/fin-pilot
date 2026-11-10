@@ -37,6 +37,9 @@ const ChatPage = lazy(() =>
 const AnomaliesPage = lazy(() =>
   import("../features/insights/anomalies-page").then((module) => ({ default: module.AnomaliesPage })),
 );
+const DigestsPage = lazy(() =>
+  import("../features/digests/digests-page").then((module) => ({ default: module.DigestsPage })),
+);
 
 function LoadPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingState label="Opening FinPilot" />}>{children}</Suspense>;
@@ -93,6 +96,7 @@ export function AppRoutes() {
         <Route path="review" element={<LoadPage><ReviewQueuePage /></LoadPage>} />
         <Route path="chat" element={<LoadPage><ChatPage /></LoadPage>} />
         <Route path="anomalies" element={<LoadPage><AnomaliesPage /></LoadPage>} />
+        <Route path="digests" element={<LoadPage><DigestsPage /></LoadPage>} />
         <Route path="settings" element={<LoadPage><CompanySettingsPage /></LoadPage>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
