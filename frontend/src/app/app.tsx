@@ -28,6 +28,9 @@ const TransactionsPage = lazy(() =>
 const ReviewQueuePage = lazy(() =>
   import("../features/transactions/review-queue-page").then((module) => ({ default: module.ReviewQueuePage })),
 );
+const ChatPage = lazy(() =>
+  import("../features/chat/chat-page").then((module) => ({ default: module.ChatPage })),
+);
 
 function LoadPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingState label="Opening FinPilot" />}>{children}</Suspense>;
@@ -81,6 +84,7 @@ export function AppRoutes() {
         <Route path="dashboard" element={<LoadPage><DashboardPage /></LoadPage>} />
         <Route path="transactions" element={<LoadPage><TransactionsPage /></LoadPage>} />
         <Route path="review" element={<LoadPage><ReviewQueuePage /></LoadPage>} />
+        <Route path="chat" element={<LoadPage><ChatPage /></LoadPage>} />
         <Route path="settings" element={<LoadPage><CompanySettingsPage /></LoadPage>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
