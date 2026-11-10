@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, parseISO } from "date-fns";
-import { ArrowDownRight, ArrowUpRight, CirclePlus, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CirclePlus, FileUp, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import {
   useUpdateTransaction,
 } from "./hooks";
 import type { Category, Transaction, TransactionListQuery } from "./api";
+import { CsvImportPanel } from "./csv-import-panel";
 
 const PAGE_SIZE = 25;
 
@@ -237,6 +238,7 @@ export function TransactionsPage() {
   const [direction, setDirection] = useState<NonNullable<TransactionListQuery["direction"]> | "">("");
   const [editorTransaction, setEditorTransaction] = useState<Transaction | null | undefined>(undefined);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const query = useMemo<TransactionListQuery>(() => ({
     offset,
     limit: PAGE_SIZE,
@@ -291,8 +293,15 @@ export function TransactionsPage() {
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Transactions</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Browse and maintain this company’s cash movements. Inflows are positive and outflows are negative in the ledger.</p>
         </div>
-        {canWrite && <Button onClick={() => { createMutation.reset(); updateMutation.reset(); setEditorTransaction(null); }}><CirclePlus aria-hidden="true" className="size-4" />New transaction</Button>}
+        {canWrite && <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setShowCsvImport((current) => !current)} variant="secondary">
+            <FileUp aria-hidden="true" className="size-4" />{showCsvImport ? "Close CSV import" : "Import CSV"}
+          </Button>
+          <Button onClick={() => { createMutation.reset(); updateMutation.reset(); setEditorTransaction(null); }}><CirclePlus aria-hidden="true" className="size-4" />New transaction</Button>
+        </div>}
       </div>
+
+      {canWrite && showCsvImport && <CsvImportPanel companyId={company.company_id} currencyCode={company.currency_code} />}
 
       {editing && <TransactionEditor
         categories={categories.data ?? []}

@@ -5,6 +5,7 @@ import {
   acceptTransactionSuggestion,
   createTransaction,
   deleteTransaction,
+  importTransactionsCsv,
   listCategories,
   listTransactions,
   listTransactionsForReview,
@@ -87,6 +88,14 @@ export function useDeleteTransaction(companyId: string) {
   const invalidate = useInvalidateTransactionData(companyId);
   return useMutation({
     mutationFn: (transactionId: string) => deleteTransaction(companyId, transactionId),
+    onSuccess: invalidate,
+  });
+}
+
+export function useImportTransactionsCsv(companyId: string) {
+  const invalidate = useInvalidateTransactionData(companyId);
+  return useMutation({
+    mutationFn: (file: File) => importTransactionsCsv(companyId, file),
     onSuccess: invalidate,
   });
 }

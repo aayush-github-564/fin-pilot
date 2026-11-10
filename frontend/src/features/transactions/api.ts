@@ -7,6 +7,7 @@ export type Transaction = components["schemas"]["TransactionRead"];
 export type Category = components["schemas"]["CategoryRead"];
 export type TransactionCreate = components["schemas"]["TransactionCreate"];
 export type TransactionUpdate = components["schemas"]["TransactionUpdate"];
+export type CSVImportResult = components["schemas"]["CSVImportRead"];
 export type TransactionListQuery = NonNullable<
   operations["list_transactions_api_v1_companies__company_id__transactions_get"]["parameters"]["query"]
 >;
@@ -56,6 +57,43 @@ export async function acceptTransactionSuggestion(
     throw await normalizeApiError(result.response, result.error);
   }
   if (!result.data) throw new Error("The server returned no reviewed transaction.");
+  return result.data;
+}
+
+export async function getTransaction(
+  companyId: string,
+  transactionId: string,
+): Promise<Transaction> {
+  const result = await api.GET(
+    "/api/v1/companies/{company_id}/transactions/{transaction_id}",
+    { params: { path: { company_id: companyId, transaction_id: transactionId } } },
+  );
+  if (!result.response.ok) {
+    throw await normalizeApiError(result.response, result.error);
+  }
+  if (!result.data) throw new Error("The server returned no transaction status.");
+  return result.data;
+}
+
+export async function importTransactionsCsv(
+  companyId: string,
+  file: File,
+): Promise<CSVImportResult> {
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+  const result = await api.POST(
+    "/api/v1/companies/{company_id}/transactions/import-csv",
+    {
+      params: { path: { company_id: companyId } },
+      // openapi-typescript currently types this binary multipart field as string.
+      // openapi-fetch's default serializer passes FormData through and sets its boundary.
+      body: formData as unknown as components["schemas"]["Body_import_transactions_csv_api_v1_companies__company_id__transactions_import_csv_post"],
+    },
+  );
+  if (!result.response.ok) {
+    throw await normalizeApiError(result.response, result.error);
+  }
+  if (!result.data) throw new Error("The server returned no CSV import report.");
   return result.data;
 }
 
