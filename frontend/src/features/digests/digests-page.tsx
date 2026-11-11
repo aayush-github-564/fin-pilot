@@ -133,7 +133,7 @@ function CompanyDigests({ companyId, currency }: { companyId: string; currency: 
   return <div className="mx-auto max-w-5xl space-y-6">
     <div>
       <p className="fp-eyebrow">Reports</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Weekly digests</h1>
+      <h1 className="fp-page-title mt-2">Weekly <em>digests</em></h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">A saved summary of the previous full week, with figures calculated from your company’s records.</p>
     </div>
     <Card className="flex flex-wrap items-center justify-between gap-3 p-4">

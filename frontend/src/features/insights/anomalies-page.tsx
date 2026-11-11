@@ -40,7 +40,7 @@ function AnomalyCard({ anomaly, companyId, currency }: {
   const basis = anomaly.comparison_basis === "vendor" ? "Vendor history" : "Category history";
   const subject = anomaly.description || anomaly.category_name || "Expense";
 
-  return <article className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+  return <article className="rounded-lg border border-card-line bg-card p-5">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
@@ -125,7 +125,7 @@ function CompanyAnomalies({ companyId, currency }: { companyId: string; currency
   return <div className="mx-auto max-w-5xl space-y-6">
     <div>
       <p className="fp-eyebrow">Insights · {role}</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Spending anomalies</h1>
+      <h1 className="fp-page-title mt-2">Spending <em>anomalies</em></h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Compare recent company expenses with earlier vendor or category spending. The scan runs only when you ask for it.</p>
     </div>
 

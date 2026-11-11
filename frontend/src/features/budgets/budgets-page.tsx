@@ -106,7 +106,7 @@ function BudgetCard({ budget, categories, categoryName, currency, companyId, can
   const periodLabel = format(parseISO(`${budget.period}-01`), "MMMM yyyy");
   const save = (values: BudgetFormValues) => update.mutate({ budgetId: budget.id, body: values }, { onSuccess: () => setEditing(false) });
 
-  return <article className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+  return <article className="rounded-lg border border-card-line bg-card p-4">
     {editing ? <>
       <div className="mb-4"><h3 className="font-semibold text-foreground">Edit budget · {periodLabel}</h3><p className="mt-1 text-xs text-muted">Category budgets are monthly limits.</p></div>
       <BudgetFields categories={categories} error={update.error} initial={budget} busy={update.isPending} onCancel={() => { setEditing(false); update.reset(); }} onSave={save} submitLabel="Save budget" />
@@ -150,7 +150,7 @@ function CompanyBudgets({ companyId, currency, canWrite }: { companyId: string; 
   };
 
   return <div className="mx-auto max-w-5xl space-y-6">
-    <div><p className="fp-eyebrow">Planning</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Budgets</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Set monthly spending limits by expense category. Actual spending is shown on the Overview dashboard.</p></div>
+    <div><p className="fp-eyebrow">Planning</p><h1 className="fp-page-title mt-2"><em>Budgets</em></h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Set monthly spending limits by expense category. Actual spending is shown on the Overview dashboard.</p></div>
     {canWrite && <Card className="overflow-hidden"><CardHeader className="border-b border-line"><CardTitle>Create a budget</CardTitle><CardDescription className="mt-1">Choose an expense category and the month it applies to.</CardDescription></CardHeader><div className="space-y-3 p-5"><BudgetFields categories={categories.data ?? []} error={create.error} formError={duplicateError} busy={create.isPending} onSave={createBudget} submitLabel="Add budget" />{savedMessage && <p className="text-sm text-positive" role="status">{savedMessage}</p>}</div></Card>}
     <Card className="overflow-hidden">
       <CardHeader className="border-b border-line"><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle>Monthly budgets</CardTitle><CardDescription className="mt-1">These limits are used by the dashboard and monthly budget reports.</CardDescription></div><label className="space-y-1.5 text-xs font-semibold text-muted">Show month<Input aria-label="Show budget month" onChange={(event) => setPeriod(event.currentTarget.value)} type="month" value={period} /></label></div></CardHeader>

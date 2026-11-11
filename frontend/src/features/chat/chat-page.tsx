@@ -192,7 +192,7 @@ function CompanyChat({ companyId, currency }: { companyId: string; currency: str
   return <div className="mx-auto max-w-4xl space-y-6">
     <div>
       <p className="fp-eyebrow">FinPilot assistant · {role}</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Ask about your finances</h1>
+      <h1 className="fp-page-title mt-2">Ask about your <em>finances</em></h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Ask about cash flow, expenses by category, largest expenses, or this and last month's budgets.</p>
     </div>
 
@@ -214,10 +214,10 @@ function CompanyChat({ companyId, currency }: { companyId: string; currency: str
           <p className="mt-1 text-xs text-muted">Pick an example or type your own question.</p>
         </div> : <div aria-label="Conversation" className="space-y-4" role="log">
           {messages.map(({ question: asked, response }) => <article className="space-y-3" key={response.query_id}>
-            <div className="ml-auto flex max-w-[90%] items-start gap-2 rounded-lg bg-dark-bg px-4 py-3 text-sm leading-6 text-dark-text sm:max-w-[80%]">
+            <div className="fp-chat-bubble-user ml-auto flex max-w-[380px] items-start gap-2 px-4 py-3 text-sm leading-6 sm:max-w-[380px]">
               <UserRound aria-hidden="true" className="mt-1 size-4 shrink-0 text-dark-accent" /><p>{asked}</p>
             </div>
-            <Card className="mr-auto max-w-full bg-surface-raised p-4 sm:max-w-[92%]">
+            <Card className="fp-chat-bubble-assistant mr-auto max-w-full p-4 sm:max-w-[380px]">
               <div className="flex flex-wrap items-center gap-2">
                 <Bot aria-hidden="true" className="size-4 text-accent" />
                 <span className="text-xs font-bold text-foreground-body">FinPilot</span>

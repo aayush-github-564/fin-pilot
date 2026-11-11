@@ -65,10 +65,10 @@ function ReviewItem({
   const noAmount = /^-?0+(?:\.0+)?$/.test(transaction.amount);
 
   return (
-    <article className="grid gap-5 rounded-lg border border-border bg-surface p-5 shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.8fr)_auto] lg:items-center">
+    <article className="grid gap-5 rounded-lg border border-card-line bg-card p-5 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.8fr)_auto] lg:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="neutral">Needs review</Badge>
+          <Badge variant="caution">Needs review</Badge>
           <span className="text-xs text-muted">{transaction.date}</span>
           <Badge variant="info">{transaction.source === "upload" ? "Imported" : "Manual"}</Badge>
         </div>
@@ -129,7 +129,7 @@ export function ReviewQueuePage() {
     <div className="space-y-6">
       <div>
         <p className="fp-eyebrow">Categorization</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Review queue</h1>
+        <h1 className="fp-page-title mt-2">Review <em>queue</em></h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Check uncertain transaction categories. Accept a suggestion or choose a category that matches the transaction direction.</p>
       </div>
 

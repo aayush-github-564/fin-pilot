@@ -13,7 +13,8 @@ import { useCategories, useTransactionById } from "./hooks";
 
 function statusVariant(status: string) {
   if (status === "done") return "success" as const;
-  if (status === "needs_review" || status === "failed") return "danger" as const;
+  if (status === "needs_review") return "caution" as const;
+  if (status === "failed") return "danger" as const;
   return "info" as const;
 }
 

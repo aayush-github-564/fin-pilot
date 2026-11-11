@@ -52,7 +52,7 @@ function isProcessing(status: string) {
 function MissingField({ label, value }: { label: string; value: string | null | undefined }) {
   const missing = value === null || value === undefined || value.trim() === "";
   return <div className="space-y-1">
-    <dt className="flex items-center gap-2 text-xs font-medium text-muted">{label}{missing && <Badge variant="danger">Needs review</Badge>}</dt>
+    <dt className="flex items-center gap-2 text-xs font-medium text-muted">{label}{missing && <Badge variant="caution">Needs review</Badge>}</dt>
     <dd className={`break-words text-sm font-semibold ${missing ? "text-pine" : "text-foreground"}`}>{value || "Not extracted"}</dd>
   </div>;
 }
@@ -284,7 +284,7 @@ function CompanyInvoices({ companyId, currency, canWrite }: { companyId: string;
   return <div className="mx-auto max-w-5xl space-y-6">
     <div>
       <p className="fp-eyebrow">Documents</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Invoices</h1>
+      <h1 className="fp-page-title mt-2"><em>Invoices</em></h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Upload a document, check the extracted details, and confirm the review when they are correct.</p>
     </div>
     <div className="flex items-start gap-3 rounded-lg border border-caution/40 bg-caution/20 p-4 text-sm leading-6 text-pine"><TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" /><p><strong>Invoices do not change cash flow.</strong> Confirming a document records that you reviewed it. Record money actually received or paid separately in Transactions.</p></div>

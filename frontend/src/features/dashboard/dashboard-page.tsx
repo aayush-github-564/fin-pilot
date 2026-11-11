@@ -104,15 +104,15 @@ function MetricCard({
     <Card className="min-w-0">
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-muted">{title}</p>
+          <p className="fp-label">{title}</p>
           <span className="grid size-9 shrink-0 place-items-center rounded-md bg-surface-raised text-accent">
             {icon}
           </span>
         </div>
-        <div className="mt-3 min-h-9 text-2xl font-semibold tracking-tight text-foreground">
+        <div className="fp-kpi-value mt-3 min-h-9">
           {children}
         </div>
-        <p className="mt-1 text-xs leading-5 text-muted">{detail}</p>
+        <p className="fp-kpi-helper mt-1">{detail}</p>
       </CardHeader>
     </Card>
   );
@@ -162,7 +162,7 @@ function CashFlowRangeControls({
                 aria-pressed={granularity === value}
                 className={`min-h-9 rounded-sm px-3 text-sm font-semibold transition ${
                   granularity === value
-                    ? "bg-surface text-foreground shadow-sm"
+                    ? "bg-card text-foreground"
                     : "text-muted hover:text-foreground"
                 }`}
                 key={value}
@@ -488,21 +488,20 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-xl bg-dark-bg px-6 py-7 text-dark-text shadow-xl  sm:px-9 sm:py-9">
-        <div aria-hidden="true" className="absolute -right-14 -top-28 size-80 rounded-pill bg-dark-accent/20 blur-[90px]" />
+      <section className="relative overflow-hidden rounded-xl bg-dark-bg px-6 py-7 text-dark-text sm:px-9 sm:py-9">
         <div className="relative flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="border border-dark-border bg-dark-surface text-dark-accent" variant="neutral">Company overview</Badge>
               <Badge className="border border-dark-border bg-dark-bg text-dark-text-muted" variant="neutral">{role}</Badge>
             </div>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Welcome to {company.name}</h1>
+            <h1 className="fp-page-title fp-page-title--dark mt-4">Welcome to <em>{company.name}</em></h1>
             <p className="mt-2 text-sm leading-6 text-dark-text-muted">
               Financial totals and runway are supplied by FinPilot's company-scoped metrics service.
             </p>
           </div>
           <div className="relative rounded-lg border border-dark-border bg-dark-surface px-4 py-3 text-sm text-dark-text-muted">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Accounting currency</p>
+            <p className="fp-label fp-label--dark-muted">Accounting currency</p>
             <p className="mt-1 font-semibold text-dark-text">{company.currency_code ?? "Owner setup needed"}</p>
           </div>
         </div>

@@ -50,7 +50,8 @@ function errorText(error: unknown, fallback: string) {
 
 function statusVariant(status: Transaction["categorization_status"]) {
   if (status === "done") return "success" as const;
-  if (status === "needs_review" || status === "failed") return "neutral" as const;
+  if (status === "needs_review") return "caution" as const;
+  if (status === "failed") return "danger" as const;
   return "info" as const;
 }
 
@@ -290,7 +291,7 @@ export function TransactionsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="fp-eyebrow">Ledger</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Transactions</h1>
+          <h1 className="fp-page-title mt-2"><em>Transactions</em></h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Browse and maintain this company’s cash movements. Inflows are positive and outflows are negative in the ledger.</p>
         </div>
         {canWrite && <div className="flex flex-wrap gap-2">

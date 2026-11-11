@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { ApiError } from "../../api/errors";
 import { useAuth } from "../../app/auth-context";
+import { BrandLockup } from "../../components/brand/brand-lockup";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
@@ -88,11 +89,8 @@ export function CompanyPickerPage() {
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-md bg-dark-bg text-dark-accent">
-              <Building2 aria-hidden="true" className="size-5" />
-            </span>
+            <BrandLockup className="text-pine" wordmarkClassName="text-base" />
             <div>
-              <p className="font-bold tracking-tight text-foreground">FinPilot</p>
               <p className="text-xs text-muted">Choose your workspace</p>
             </div>
           </div>
@@ -114,8 +112,8 @@ export function CompanyPickerPage() {
           </p>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                Your workspaces
+              <h1 className="fp-page-title">
+                Your <em>workspaces</em>
               </h1>
               <p className="mt-2 text-sm leading-6 text-muted">
                 Choose a company to continue. Each workspace keeps its records and access in
@@ -136,7 +134,7 @@ export function CompanyPickerPage() {
                   key={company.company_id}
                   to={companyPath(company)}
                 >
-                  <Card className="h-full transition group-hover:-translate-y-0.5 group-hover:border-accent/40 group-hover:shadow-md">
+                  <Card className="h-full transition-colors group-hover:border-accent/40">
                     <CardHeader>
                       <div className="flex items-start justify-between gap-3">
                         <span className="grid size-10 place-items-center rounded-md bg-signal-deep/10 text-accent">
@@ -165,7 +163,7 @@ export function CompanyPickerPage() {
               ))}
             </div>
           ) : (
-            <Card className="mt-7 border-dashed bg-surface/70 p-7 text-center sm:p-10">
+            <Card className="mt-7 border-dashed bg-card p-7 text-center sm:p-10">
               <span className="mx-auto grid size-12 place-items-center rounded-lg bg-signal-deep/10 text-accent">
                 <Building2 aria-hidden="true" className="size-6" />
               </span>

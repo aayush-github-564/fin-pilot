@@ -12,8 +12,8 @@ export function CompanySettingsPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
         <p className="fp-eyebrow">Workspace</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-          Company settings
+        <h1 className="fp-page-title mt-2">
+          Company <em>settings</em>
         </h1>
         <p className="mt-2 text-sm leading-6 text-muted">
           Review the company identity, accounting currency, and your access level.

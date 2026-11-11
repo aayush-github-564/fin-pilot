@@ -1,5 +1,7 @@
-import { ArrowUpRight, Landmark, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
+
+import { BrandLockup } from "../../components/brand/brand-lockup";
 
 interface AuthLayoutProps {
   eyebrow: string;
@@ -19,18 +21,15 @@ export function AuthLayout({
   return (
     <main className="grid min-h-screen bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)]">
       <section className="flex min-h-screen flex-col px-5 py-7 sm:px-10 lg:px-16">
-        <a aria-label="FinPilot home" className="inline-flex w-fit items-center gap-3" href="/">
-          <span className="grid size-11 place-items-center rounded-sm bg-dark-bg text-dark-accent shadow-lg ">
-            <Landmark aria-hidden="true" className="size-5" />
-          </span>
-          <span className="text-lg font-bold tracking-tight text-foreground">FinPilot</span>
+        <a aria-label="FinPilot home" className="inline-flex w-fit items-center" href="/">
+          <BrandLockup className="text-pine" wordmarkClassName="text-lg" />
         </a>
 
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-14">
           <p className="fp-eyebrow">
             {eyebrow}
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          <h1 className="fp-page-title mt-3">
             {title}
           </h1>
           <p className="mt-3 max-w-sm text-sm leading-6 text-muted">{subtitle}</p>
@@ -45,10 +44,6 @@ export function AuthLayout({
       </section>
 
       <aside className="relative hidden min-h-screen overflow-hidden bg-dark-bg p-12 text-dark-text lg:flex lg:flex-col lg:justify-between">
-        <div
-          aria-hidden="true"
-          className="absolute -right-24 top-20 size-[28rem] rounded-pill bg-dark-accent/20 blur-[100px]"
-        />
         <div className="relative flex items-center gap-2 text-sm font-medium text-dark-text-muted">
           <span className="size-2 rounded-pill bg-dark-accent" />
           One clear view of your operations
@@ -68,8 +63,8 @@ export function AuthLayout({
           <p className="fp-label fp-label--dark-accent">
             Company finance, made legible
           </p>
-          <h2 className="mt-4 text-4xl font-semibold leading-tight tracking-tight xl:text-5xl">
-            The details stay close. The bigger picture gets clearer.
+          <h2 className="fp-hero-title mt-4">
+            The details stay close. The bigger picture gets <em>clearer.</em>
           </h2>
           <p className="mt-5 max-w-lg text-base leading-7 text-dark-text-muted">
             Bring transactions, invoices, budgets, and useful financial context into one

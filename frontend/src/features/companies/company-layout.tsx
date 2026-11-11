@@ -1,7 +1,8 @@
-import { Activity, ArrowLeftRight, Building2, CalendarDays, ClipboardCheck, LayoutDashboard, LogOut, MessageCircle, ReceiptText, Settings2, Tags, WalletCards } from "lucide-react";
+import { Activity, ArrowLeftRight, CalendarDays, ClipboardCheck, LayoutDashboard, LogOut, MessageCircle, ReceiptText, Settings2, Tags, WalletCards } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from "react-router-dom";
 
 import { Badge } from "../../components/ui/badge";
+import { BrandLockup } from "../../components/brand/brand-lockup";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
 import { ErrorMessage, LoadingState } from "../../components/ui/feedback";
@@ -24,23 +25,17 @@ function CompanyWorkspace({
   const { signOut } = useAuth();
   const { role } = useRole();
   const navigationClass = ({ isActive }: { isActive: boolean }) =>
-    `flex min-h-11 items-center gap-3 rounded-sm px-3.5 text-sm font-medium transition ${
+    `flex h-11 items-center gap-3 rounded-sm px-3.5 text-sm font-semibold transition ${
       isActive
-        ? "bg-dark-surface text-dark-text shadow-sm"
+        ? "bg-dark-surface text-dark-text"
         : "text-dark-text-muted hover:bg-dark-surface hover:text-dark-text"
     }`;
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-dark-border bg-dark-bg px-4 py-5 text-dark-text lg:flex">
-        <Link className="flex items-center gap-3 px-2" to={`/c/${company.company_id}/dashboard`}>
-          <span className="grid size-10 place-items-center rounded-sm bg-dark-surface text-dark-accent">
-            <Building2 aria-hidden="true" className="size-5" />
-          </span>
-          <span>
-            <span className="block text-base font-bold tracking-tight text-dark-text">FinPilot</span>
-            <span className="block text-xs text-dark-text-muted">Finance operations</span>
-          </span>
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-58 flex-col border-r border-dark-border bg-dark-bg px-4 py-5 text-dark-text lg:flex">
+        <Link className="flex items-center px-2 text-dark-text" to={`/c/${company.company_id}/dashboard`}>
+          <BrandLockup wordmarkClassName="text-lg" />
         </Link>
 
         <div className="mt-9 px-2">
@@ -54,44 +49,34 @@ function CompanyWorkspace({
 
         <nav aria-label="Company navigation" className="mt-5 space-y-1">
           <NavLink className={navigationClass} to={`/c/${company.company_id}/dashboard`}>
-            <LayoutDashboard aria-hidden="true" className="size-4" />
-            Overview
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><LayoutDashboard aria-hidden="true" className="size-4" />Overview</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/transactions`}>
-            <ArrowLeftRight aria-hidden="true" className="size-4" />
-            Transactions
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><ArrowLeftRight aria-hidden="true" className="size-4" />Transactions</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/budgets`}>
-            <WalletCards aria-hidden="true" className="size-4" />
-            Budgets
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><WalletCards aria-hidden="true" className="size-4" />Budgets</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/categories`}>
-            <Tags aria-hidden="true" className="size-4" />
-            Categories
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><Tags aria-hidden="true" className="size-4" />Categories</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/review`}>
-            <ClipboardCheck aria-hidden="true" className="size-4" />
-            Review queue
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><ClipboardCheck aria-hidden="true" className="size-4" />Review queue</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/chat`}>
-            <MessageCircle aria-hidden="true" className="size-4" />
-            Ask FinPilot
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><MessageCircle aria-hidden="true" className="size-4" />Ask FinPilot</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/anomalies`}>
-            <Activity aria-hidden="true" className="size-4" />
-            Spending anomalies
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><Activity aria-hidden="true" className="size-4" />Spending anomalies</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/digests`}>
-            <CalendarDays aria-hidden="true" className="size-4" />
-            Weekly digests
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><CalendarDays aria-hidden="true" className="size-4" />Weekly digests</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/invoices`}>
-            <ReceiptText aria-hidden="true" className="size-4" />
-            Invoices
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><ReceiptText aria-hidden="true" className="size-4" />Invoices</>}
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/settings`}>
-            <Settings2 aria-hidden="true" className="size-4" />
-            Company settings
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><Settings2 aria-hidden="true" className="size-4" />Company settings</>}
           </NavLink>
         </nav>
 
@@ -104,18 +89,16 @@ function CompanyWorkspace({
         </div>
       </aside>
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-10 border-b border-border/80 bg-surface/90 px-4 py-3 backdrop-blur sm:px-7 lg:px-9">
+      <div className="lg:pl-58">
+        <header className="sticky top-0 z-10 border-b border-line bg-card px-4 py-3 sm:px-7 lg:px-9">
           <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3 lg:max-w-xl">
-              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-dark-bg text-dark-accent lg:hidden">
-                <Building2 aria-hidden="true" className="size-4" />
-              </span>
+              <BrandLockup className="text-pine lg:hidden" wordmarkClassName="text-sm" />
               <label className="sr-only" htmlFor="company-switcher">
                 Switch company
               </label>
               <Select
-                className="min-w-0 max-w-full border-transparent bg-surface-raised font-semibold shadow-none sm:max-w-sm"
+                className="min-w-0 max-w-full border-transparent bg-surface-raised font-semibold sm:max-w-sm"
                 id="company-switcher"
                 onChange={(event) =>
                   navigate(`/c/${event.currentTarget.value}/dashboard`)
