@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, Building2, CalendarDays, ClipboardCheck, LayoutDashboard, LogOut, MessageCircle, Settings2 } from "lucide-react";
+import { Activity, ArrowLeftRight, Building2, CalendarDays, ClipboardCheck, LayoutDashboard, LogOut, MessageCircle, ReceiptText, Settings2 } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from "react-router-dom";
 
 import { Badge } from "../../components/ui/badge";
@@ -76,6 +76,10 @@ function CompanyWorkspace({
           <NavLink className={navigationClass} to={`/c/${company.company_id}/digests`}>
             <CalendarDays aria-hidden="true" className="size-4" />
             Weekly digests
+          </NavLink>
+          <NavLink className={navigationClass} to={`/c/${company.company_id}/invoices`}>
+            <ReceiptText aria-hidden="true" className="size-4" />
+            Invoices
           </NavLink>
           <NavLink className={navigationClass} to={`/c/${company.company_id}/settings`}>
             <Settings2 aria-hidden="true" className="size-4" />
