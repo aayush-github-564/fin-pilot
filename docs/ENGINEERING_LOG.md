@@ -94,6 +94,15 @@ This log records milestones and outstanding engineering work, not a file-by-file
 - No backend code, dependencies, or migrations changed. Upload/extraction is MSW-mocked; tests call no real Anthropic API. Local services remain stopped, so live API/extraction behavior was not exercised.
 - Verification: all 37 frontend tests passed across 10 files with `npm run test -- --maxWorkers=1`; focused invoice tests passed 5/5. `npm run typecheck` passed; `npm run lint` exited 0 with the same three existing Fast Refresh warnings; `npm run build` passed and emitted a lazy-loaded `invoices-page` chunk (19.54 kB, 5.83 kB gzip). No backend suite was run because no backend code changed.
 
-## Recommended next engineering task
+## 13. Frontend checkpoint 11 — budgets and category management — 2026-11-11
 
-Continue with checkpoint 11: budget CRUD and category management, following the remaining should-have scope. Keep budget selection limited to expense categories and month periods; keep global categories read-only, surface write conflicts inline, and preserve role gating. Continue in reviewed milestones; do not commit on the human's behalf.
+- Added company-scoped budget and category routes and navigation. Budgets support month filtering, creation, editing, and confirmed deletion; create forms offer expense categories only and positive amounts with at most two decimal places. The UI blocks duplicate category/month budgets because the backend currently permits duplicates, and invalidates dashboard metrics when budgets change.
+- Categories show global defaults in a separate read-only section and company categories in a manageable section. Owners/accountants can create, edit, and confirm deletion; viewers have no write controls. Parent selection is limited to same-kind company or global categories. API write conflicts, including 409 kind conflicts, stay inline in the form.
+- No backend changes, dependencies, or migrations were needed. Financial amounts remain API-owned values and are only formatted. Tests use MSW; no live API or database verification was done because local services remain stopped.
+- Verification: focused budget/category tests passed 8/8; complete frontend suite passed 45 tests across 12 files with `npm run test -- --maxWorkers=1`; `npm run typecheck` passed; `npm run lint` exited 0 with the same three existing Fast Refresh warnings; `npm run build` passed. The production build emitted lazy-loaded `budgets-page` (10.70 kB) and `categories-page` (10.60 kB) chunks. Vitest/build used the local-process permissions required by the Windows/Vite environment.
+
+## Recommended remaining frontend checkpoints
+
+Checkpoint 12: integration verification against the real local stack. Start services only when authorized/available, run the backend suite, exercise the required role-gated flows and tenant switching against the API, and run the three required Playwright smoke flows. Record any contract mismatch and fix only within the architecture brief.
+
+Checkpoint 13: finish the empty repository README with backend/frontend setup, test and stack commands, and a short demo script; verify the documented same-origin Docker/development path (or record exactly what cannot be verified); then deliver the architecture's final report. Optional could-have features (team invite page, dark mode, extra Playwright coverage, duplicate-invoice warning) remain outside the required checkpoints unless later added deliberately.

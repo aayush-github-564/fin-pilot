@@ -43,6 +43,12 @@ const DigestsPage = lazy(() =>
 const InvoicesPage = lazy(() =>
   import("../features/invoices/invoices-page").then((module) => ({ default: module.InvoicesPage })),
 );
+const BudgetsPage = lazy(() =>
+  import("../features/budgets/budgets-page").then((module) => ({ default: module.BudgetsPage })),
+);
+const CategoriesPage = lazy(() =>
+  import("../features/categories/categories-page").then((module) => ({ default: module.CategoriesPage })),
+);
 
 function LoadPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingState label="Opening FinPilot" />}>{children}</Suspense>;
@@ -101,6 +107,8 @@ export function AppRoutes() {
         <Route path="anomalies" element={<LoadPage><AnomaliesPage /></LoadPage>} />
         <Route path="digests" element={<LoadPage><DigestsPage /></LoadPage>} />
         <Route path="invoices" element={<LoadPage><InvoicesPage /></LoadPage>} />
+        <Route path="budgets" element={<LoadPage><BudgetsPage /></LoadPage>} />
+        <Route path="categories" element={<LoadPage><CategoriesPage /></LoadPage>} />
         <Route path="settings" element={<LoadPage><CompanySettingsPage /></LoadPage>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
