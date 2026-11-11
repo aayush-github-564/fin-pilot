@@ -320,7 +320,7 @@ function BudgetPanel({
                       <span className="truncate text-sm font-semibold text-foreground-body">{item.category_name}</span>
                       <Badge variant="neutral">{item.category_kind}</Badge>
                     </div>
-                    {item.over_budget && <Badge className="bg-negative/10 text-negative" variant="neutral">Over budget</Badge>}
+                    {item.over_budget && <Badge className="bg-negative/5 text-negative" variant="neutral">Over budget</Badge>}
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-3 text-xs">
                     <SummaryAmount label="Actual" value={item.actual_amount} currencyCode={currencyCode} />
@@ -607,7 +607,7 @@ export function DashboardPage() {
             {reviewCountQuery.isPending || reviewCountQuery.isError ? (
               <QueryStatus error={reviewCountQuery.error} isError={reviewCountQuery.isError} isPending={reviewCountQuery.isPending} label="Loading review queue count" onRetry={() => void reviewCountQuery.refetch()} />
             ) : reviewCountQuery.data === 0 ? (
-              <div className="mt-5 rounded-md bg-positive/10 p-4">
+              <div className="mt-5 rounded-md bg-positive/5 p-4">
                 <p className="font-semibold text-positive">Queue clear</p>
                 <p className="mt-1 text-sm text-positive">There are no transactions waiting for category review.</p>
               </div>

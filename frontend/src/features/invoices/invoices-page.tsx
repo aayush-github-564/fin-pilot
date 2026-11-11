@@ -98,7 +98,7 @@ function InvoiceEditForm({
     });
   };
 
-  return <div className="space-y-4 rounded-md border border-border bg-signal-deep/10 p-4">
+  return <div className="space-y-4 rounded-md border border-border bg-signal-deep/5 p-4">
     <h3 className="text-sm font-semibold text-foreground">{confirmed ? "Update payment status" : "Review extracted details"}</h3>
     {!confirmed && <div className="grid gap-3 sm:grid-cols-2">
       <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-direction-${invoice.id}`}>Document direction
@@ -252,7 +252,7 @@ function InvoiceUploadForm({ companyId, canWrite }: { companyId: string; canWrit
 
   return <Card className="overflow-hidden">
     <CardHeader className="border-b border-line">
-      <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/10 text-accent"><FileUp aria-hidden="true" className="size-5" /></span><div><CardTitle>Upload an invoice or receipt</CardTitle><CardDescription className="mt-1">FinPilot reads the document and suggests the vendor, total, and date for you to review.</CardDescription></div></div>
+      <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/5 text-accent"><FileUp aria-hidden="true" className="size-5" /></span><div><CardTitle>Upload an invoice or receipt</CardTitle><CardDescription className="mt-1">FinPilot reads the document and suggests the vendor, total, and date for you to review.</CardDescription></div></div>
     </CardHeader>
     <div className="space-y-4 p-5">
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>

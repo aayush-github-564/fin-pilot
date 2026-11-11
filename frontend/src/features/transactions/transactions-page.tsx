@@ -104,7 +104,7 @@ function TransactionEditor({
   const validCategories = categories.filter((category) => category.kind === categoryKindForDirection(direction));
 
   return (
-    <Card className="border-border bg-signal-deep/10">
+    <Card className="border-border bg-signal-deep/5">
       <CardHeader>
         <CardTitle>{initial ? "Edit transaction" : "Record a transaction"}</CardTitle>
         <CardDescription>

@@ -199,7 +199,7 @@ function CompanyChat({ companyId, currency }: { companyId: string; currency: str
     <Card className="overflow-hidden">
       <CardHeader className="border-b border-line">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/10 text-accent"><MessageCircle aria-hidden="true" className="size-5" /></span>
+          <span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/5 text-accent"><MessageCircle aria-hidden="true" className="size-5" /></span>
           <div><CardTitle>Company finance Q&amp;A</CardTitle><CardDescription className="mt-1">Messages stay only on this page and are cleared when you leave. There is no saved chat history.</CardDescription></div>
         </div>
         <div className="mt-4 rounded-md bg-surface-raised p-3 text-xs leading-5 text-muted" role="note">

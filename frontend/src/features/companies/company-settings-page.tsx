@@ -23,7 +23,7 @@ export function CompanySettingsPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-start gap-4">
-            <span className="grid size-11 shrink-0 place-items-center rounded-md bg-signal-deep/10 text-accent">
+            <span className="grid size-11 shrink-0 place-items-center rounded-md bg-signal-deep/5 text-accent">
               <Building2 aria-hidden="true" className="size-5" />
             </span>
             <div className="min-w-0">
@@ -34,7 +34,7 @@ export function CompanySettingsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-start gap-4">
-            <span className="grid size-11 shrink-0 place-items-center rounded-md bg-positive/10 text-positive">
+              <span className="grid size-11 shrink-0 place-items-center rounded-md bg-positive/5 text-positive">
               <CircleDollarSign aria-hidden="true" className="size-5" />
             </span>
             <div>

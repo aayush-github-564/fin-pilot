@@ -41,7 +41,7 @@ export function TransactionDetailPage() {
       <CardHeader className="border-b border-line">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/10 text-accent"><FileText aria-hidden="true" className="size-5" /></span>
+            <span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/5 text-accent"><FileText aria-hidden="true" className="size-5" /></span>
             <div><CardDescription>Transaction</CardDescription><CardTitle className="mt-1">{item.description || "No description"}</CardTitle></div>
           </div>
           <Badge variant={statusVariant(item.categorization_status)}>{item.categorization_status.replaceAll("_", " ")}</Badge>

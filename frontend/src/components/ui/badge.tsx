@@ -9,9 +9,9 @@ const badgeStyles = cva(
     variants: {
       variant: {
         neutral: "bg-linen text-foreground-body",
-        info: "bg-signal-deep/10 text-accent",
-        success: "bg-positive/10 text-positive",
-        danger: "bg-negative/10 text-negative",
+        info: "bg-signal-deep/5 text-accent",
+        success: "bg-positive/5 text-positive",
+        danger: "bg-negative/5 text-negative",
         caution: "bg-caution text-pine",
       },
     },
