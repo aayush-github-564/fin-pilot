@@ -104,15 +104,15 @@ function MetricCard({
     <Card className="min-w-0">
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-slate-600">{title}</p>
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-slate-50 text-cyan-900">
+          <p className="text-sm font-medium text-muted">{title}</p>
+          <span className="grid size-9 shrink-0 place-items-center rounded-md bg-surface-raised text-accent">
             {icon}
           </span>
         </div>
-        <div className="mt-3 min-h-9 text-2xl font-semibold tracking-tight text-slate-950">
+        <div className="mt-3 min-h-9 text-2xl font-semibold tracking-tight text-foreground">
           {children}
         </div>
-        <p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p>
+        <p className="mt-1 text-xs leading-5 text-muted">{detail}</p>
       </CardHeader>
     </Card>
   );
@@ -149,21 +149,21 @@ function CashFlowRangeControls({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <CalendarDays aria-hidden="true" className="size-5 text-cyan-800" />
+              <CalendarDays aria-hidden="true" className="size-5 text-accent" />
               Cash-flow period
             </CardTitle>
             <CardDescription className="mt-1">
               Choose up to 366 calendar days. Values are computed by the metrics service.
             </CardDescription>
           </div>
-          <div aria-label="Cash-flow chart grouping" className="inline-flex rounded-xl bg-slate-100 p-1" role="group">
+          <div aria-label="Cash-flow chart grouping" className="inline-flex rounded-md bg-linen p-1" role="group">
             {(["month", "day"] as const).map((value) => (
               <button
                 aria-pressed={granularity === value}
-                className={`min-h-9 rounded-lg px-3 text-sm font-semibold transition ${
+                className={`min-h-9 rounded-sm px-3 text-sm font-semibold transition ${
                   granularity === value
-                    ? "bg-white text-slate-950 shadow-sm"
-                    : "text-slate-600 hover:text-slate-950"
+                    ? "bg-surface text-foreground shadow-sm"
+                    : "text-muted hover:text-foreground"
                 }`}
                 key={value}
                 onClick={() => onGranularity(value)}
@@ -179,7 +179,7 @@ function CashFlowRangeControls({
           {PRESET_DAYS.map((days) => (
             <Button
               aria-pressed={activePreset === days}
-              className={activePreset === days ? "ring-2 ring-cyan-300 ring-offset-2" : ""}
+              className={activePreset === days ? "ring-2 ring-accent/20 ring-offset-2" : ""}
               key={days}
               onClick={() => onPreset(days)}
               size="sm"
@@ -193,9 +193,9 @@ function CashFlowRangeControls({
           </Badge>
         </div>
 
-        <form className="grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end" onSubmit={onApplyRange}>
+        <form className="grid gap-3 border-t border-line pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end" onSubmit={onApplyRange}>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600" htmlFor="cash-flow-start">
+            <label className="text-xs font-semibold text-muted" htmlFor="cash-flow-start">
               From
             </label>
             <Input
@@ -206,7 +206,7 @@ function CashFlowRangeControls({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600" htmlFor="cash-flow-end">
+            <label className="text-xs font-semibold text-muted" htmlFor="cash-flow-end">
               Through
             </label>
             <Input
@@ -219,12 +219,12 @@ function CashFlowRangeControls({
           <Button className="sm:mb-0" size="sm" type="submit" variant="secondary">
             Apply dates
           </Button>
-          {rangeError && <p className="text-sm text-rose-700 sm:col-span-3" role="alert">{rangeError}</p>}
+          {rangeError && <p className="text-sm text-negative sm:col-span-3" role="alert">{rangeError}</p>}
         </form>
 
-        <form className="grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-[minmax(200px,320px)_auto] sm:items-end" noValidate onSubmit={onApplyCashBalance}>
+        <form className="grid gap-3 border-t border-line pt-4 sm:grid-cols-[minmax(200px,320px)_auto] sm:items-end" noValidate onSubmit={onApplyCashBalance}>
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600" htmlFor="cash-balance">
+            <label className="text-xs font-semibold text-muted" htmlFor="cash-balance">
               Current cash balance (optional)
             </label>
             <Input
@@ -235,13 +235,13 @@ function CashFlowRangeControls({
               {...cashBalanceForm.register("cash_balance")}
             />
             {cashBalanceForm.formState.errors.cash_balance && (
-              <p className="text-xs text-rose-700" role="alert">
+              <p className="text-xs text-negative" role="alert">
                 {cashBalanceForm.formState.errors.cash_balance.message}
               </p>
             )}
           </div>
           <Button size="sm" type="submit" variant="secondary">Update runway estimate</Button>
-          <p className="text-xs leading-5 text-slate-500 sm:col-span-2">
+          <p className="text-xs leading-5 text-muted sm:col-span-2">
             This balance is sent only with the metrics request and is not saved to company records.
           </p>
         </form>
@@ -288,7 +288,7 @@ function BudgetPanel({
         </div>
 
         {!period ? (
-          <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600" role="status">
+          <p className="mt-5 rounded-md bg-surface-raised p-4 text-sm text-muted" role="status">
             Choose a month to view its budget report.
           </p>
         ) : isPending || isError ? (
@@ -300,26 +300,26 @@ function BudgetPanel({
             onRetry={onRetry}
           />
         ) : data && data.items.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
-            <p className="font-semibold text-slate-800">No budgets for {period || "this month"}</p>
-            <p className="mt-1 text-sm text-slate-600">Budget totals will appear here once this company has budgets.</p>
+          <div className="mt-6 rounded-md border border-dashed border-border bg-surface-raised p-5 text-center">
+            <p className="font-semibold text-foreground-body">No budgets for {period || "this month"}</p>
+            <p className="mt-1 text-sm text-muted">Budget totals will appear here once this company has budgets.</p>
           </div>
         ) : data ? (
           <>
-            <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-3">
+            <div className="mt-5 grid grid-cols-2 gap-3 rounded-md bg-surface-raised p-4 sm:grid-cols-3">
               <SummaryAmount label="Budgeted" value={data.total_budgeted} currencyCode={currencyCode} />
               <SummaryAmount label="Actual" value={data.total_actual} currencyCode={currencyCode} />
               <SummaryAmount label="Remaining" value={data.total_remaining} currencyCode={currencyCode} />
             </div>
             <div className="mt-5 space-y-4">
               {data.items.map((item) => (
-                <div className="border-b border-slate-100 pb-4 last:border-0 last:pb-0" key={item.category_id}>
+                <div className="border-b border-line pb-4 last:border-0 last:pb-0" key={item.category_id}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-slate-800">{item.category_name}</span>
+                      <span className="truncate text-sm font-semibold text-foreground-body">{item.category_name}</span>
                       <Badge variant="neutral">{item.category_kind}</Badge>
                     </div>
-                    {item.over_budget && <Badge className="bg-rose-50 text-rose-800" variant="neutral">Over budget</Badge>}
+                    {item.over_budget && <Badge className="bg-negative/10 text-negative" variant="neutral">Over budget</Badge>}
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-3 text-xs">
                     <SummaryAmount label="Actual" value={item.actual_amount} currencyCode={currencyCode} />
@@ -346,8 +346,8 @@ function SummaryAmount({
 }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 truncate font-semibold tabular-nums text-slate-800">
+      <p className="text-xs text-muted">{label}</p>
+      <p className="mt-1 truncate font-semibold tabular-nums text-foreground-body">
         {formatMoney(value, currencyCode)}
       </p>
     </div>
@@ -383,24 +383,24 @@ function RecentTransactions({
             onRetry={onRetry}
           />
         ) : data && data.items.length === 0 ? (
-          <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
-            <p className="font-semibold text-slate-800">No transactions yet</p>
-            <p className="mt-1 text-sm text-slate-600">New company records will appear here.</p>
+          <div className="mt-5 rounded-md border border-dashed border-border bg-surface-raised p-5 text-center">
+            <p className="font-semibold text-foreground-body">No transactions yet</p>
+            <p className="mt-1 text-sm text-muted">New company records will appear here.</p>
           </div>
         ) : data ? (
-          <div className="mt-4 divide-y divide-slate-100">
+          <div className="mt-4 divide-y divide-line">
             {data.items.map((transaction) => (
               <div className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-1" key={transaction.id}>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-800">
+                  <p className="truncate text-sm font-semibold text-foreground-body">
                     {transaction.description?.trim() || "Untitled transaction"}
                   </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
                     <time dateTime={transaction.date}>{format(parseISO(transaction.date), "MMM d, yyyy")}</time>
                     <Badge variant="neutral">{transaction.categorization_status.replaceAll("_", " ")}</Badge>
                   </div>
                 </div>
-                <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+                <p className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
                   {formatMoney(transaction.amount, currencyCode)}
                 </p>
               </div>
@@ -488,22 +488,22 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl bg-slate-950 px-6 py-7 text-white shadow-xl shadow-slate-300/30 sm:px-9 sm:py-9">
-        <div aria-hidden="true" className="absolute -right-14 -top-28 size-80 rounded-full bg-cyan-500/25 blur-[90px]" />
+      <section className="relative overflow-hidden rounded-xl bg-dark-bg px-6 py-7 text-dark-text shadow-xl  sm:px-9 sm:py-9">
+        <div aria-hidden="true" className="absolute -right-14 -top-28 size-80 rounded-pill bg-dark-accent/20 blur-[90px]" />
         <div className="relative flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="bg-white/10 text-cyan-100" variant="neutral">Company overview</Badge>
-              <Badge className="border border-white/15 bg-white/5 text-slate-200" variant="neutral">{role}</Badge>
+              <Badge className="border border-dark-border bg-dark-surface text-dark-accent" variant="neutral">Company overview</Badge>
+              <Badge className="border border-dark-border bg-dark-bg text-dark-text-muted" variant="neutral">{role}</Badge>
             </div>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Welcome to {company.name}</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
+            <p className="mt-2 text-sm leading-6 text-dark-text-muted">
               Financial totals and runway are supplied by FinPilot's company-scoped metrics service.
             </p>
           </div>
-          <div className="relative rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Accounting currency</p>
-            <p className="mt-1 font-semibold text-white">{company.currency_code ?? "Owner setup needed"}</p>
+          <div className="relative rounded-lg border border-dark-border bg-dark-surface px-4 py-3 text-sm text-dark-text-muted">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Accounting currency</p>
+            <p className="mt-1 font-semibold text-dark-text">{company.currency_code ?? "Owner setup needed"}</p>
           </div>
         </div>
       </section>
@@ -547,7 +547,7 @@ export function DashboardPage() {
           {metricsQuery.isPending || metricsQuery.isError ? (
             <QueryStatus error={metricsQuery.error} isError={metricsQuery.isError} isPending={metricsQuery.isPending} label="Loading runway estimate" onRetry={() => void metricsQuery.refetch()} />
           ) : metrics?.runway_status === "estimated" && metrics.runway_months !== null ? (
-            <>{formatRunwayMonths(metrics.runway_months)} <span className="text-base font-medium text-slate-500">months</span></>
+            <>{formatRunwayMonths(metrics.runway_months)} <span className="text-base font-medium text-muted">months</span></>
           ) : metrics?.runway_status === "no_net_burn" ? (
             <span className="text-lg">No estimate needed</span>
           ) : (
@@ -600,21 +600,21 @@ export function DashboardPage() {
                 <CardTitle>Review queue</CardTitle>
                 <CardDescription className="mt-1">Transactions awaiting category review.</CardDescription>
               </div>
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-900">
+              <span className="grid size-10 shrink-0 place-items-center rounded-md bg-caution/20 text-pine">
                 <Clock3 aria-hidden="true" className="size-5" />
               </span>
             </div>
             {reviewCountQuery.isPending || reviewCountQuery.isError ? (
               <QueryStatus error={reviewCountQuery.error} isError={reviewCountQuery.isError} isPending={reviewCountQuery.isPending} label="Loading review queue count" onRetry={() => void reviewCountQuery.refetch()} />
             ) : reviewCountQuery.data === 0 ? (
-              <div className="mt-5 rounded-xl bg-emerald-50 p-4">
-                <p className="font-semibold text-emerald-900">Queue clear</p>
-                <p className="mt-1 text-sm text-emerald-800">There are no transactions waiting for category review.</p>
+              <div className="mt-5 rounded-md bg-positive/10 p-4">
+                <p className="font-semibold text-positive">Queue clear</p>
+                <p className="mt-1 text-sm text-positive">There are no transactions waiting for category review.</p>
               </div>
             ) : (
               <div className="mt-5 flex items-end gap-2">
-                <span className="text-4xl font-semibold tabular-nums tracking-tight text-slate-950">{reviewCountQuery.data}</span>
-                <span className="pb-1 text-sm text-slate-600">to review</span>
+                <span className="text-4xl font-semibold tabular-nums tracking-tight text-foreground">{reviewCountQuery.data}</span>
+                <span className="pb-1 text-sm text-muted">to review</span>
               </div>
             )}
           </CardHeader>

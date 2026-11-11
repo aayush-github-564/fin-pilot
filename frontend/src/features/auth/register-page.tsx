@@ -56,7 +56,7 @@ export function RegisterPage() {
         <span>
           Already have an account?{" "}
           <Link
-            className="font-semibold text-cyan-900 underline decoration-cyan-300 underline-offset-4 hover:text-cyan-700"
+            className="font-semibold text-accent underline decoration-accent underline-offset-4 hover:text-accent"
             to={`/login${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
           >
             Sign in
@@ -72,7 +72,7 @@ export function RegisterPage() {
         {registerMutation.isError && <ErrorMessage>{messageFor(registerMutation.error)}</ErrorMessage>}
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800" htmlFor="register-email">
+          <label className="text-sm font-medium text-foreground-body" htmlFor="register-email">
             Email address
           </label>
           <Input
@@ -84,14 +84,14 @@ export function RegisterPage() {
             {...form.register("email")}
           />
           {form.formState.errors.email && (
-            <p className="text-sm text-rose-700" role="alert">
+            <p className="text-sm text-negative" role="alert">
               {form.formState.errors.email.message}
             </p>
           )}
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800" htmlFor="register-password">
+          <label className="text-sm font-medium text-foreground-body" htmlFor="register-password">
             Password
           </label>
           <Input
@@ -102,11 +102,11 @@ export function RegisterPage() {
             {...form.register("password")}
           />
           {form.formState.errors.password && (
-            <p className="text-sm text-rose-700" role="alert">
+            <p className="text-sm text-negative" role="alert">
               {form.formState.errors.password.message}
             </p>
           )}
-          <p className="text-xs text-slate-500">Use the password policy configured for your account.</p>
+          <p className="text-xs text-muted">Use the password policy configured for your account.</p>
         </div>
 
         <Button className="w-full" disabled={registerMutation.isPending} size="lg" type="submit">

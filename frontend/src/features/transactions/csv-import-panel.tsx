@@ -96,12 +96,12 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="border-b border-slate-100">
+      <CardHeader className="border-b border-line">
         <CardTitle>Import a bank statement</CardTitle>
         <CardDescription className="mt-1">
           CSV imports support up to 1,000 transaction rows. Review these assumptions before uploading.
         </CardDescription>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-700">
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-6 text-foreground-body">
           <li>
             Amounts are treated as {currencyCode ? `company accounting currency (${currencyCode})` : "company accounting currency"}; FinPilot does not convert currencies.
             {!currencyCode && " This company has no currency set, so amounts will be imported as-is."}
@@ -113,11 +113,11 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
 
       <div className="space-y-4 p-5">
         <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={submit}>
-          <label className="min-w-0 flex-1 space-y-1.5 text-xs font-semibold text-slate-600" htmlFor="statement-csv">
+          <label className="min-w-0 flex-1 space-y-1.5 text-xs font-semibold text-muted" htmlFor="statement-csv">
             CSV file (maximum 5 MiB)
             <input
               accept=".csv,text/csv"
-              className="block min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 focus:outline-none focus:ring-4 focus:ring-cyan-100"
+              className="block min-h-11 w-full rounded-md border border-input-line bg-surface px-3 py-2 text-sm font-normal text-foreground-body file:mr-3 file:rounded-sm file:border-0 file:bg-linen file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-foreground-body focus:outline-none focus:ring-4 focus:ring-accent/10"
               id="statement-csv"
               onChange={(event) => chooseFile(event.currentTarget.files?.[0] ?? null)}
               type="file"
@@ -131,11 +131,11 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
         {fileError && <ErrorMessage>{fileError}</ErrorMessage>}
         {importMutation.error && <ErrorMessage>{errorText(importMutation.error)}</ErrorMessage>}
 
-        {result && <section aria-labelledby="csv-import-results" className="space-y-4 border-t border-slate-100 pt-5">
+        {result && <section aria-labelledby="csv-import-results" className="space-y-4 border-t border-line pt-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-slate-950" id="csv-import-results">Import results</h3>
-              <p className="mt-1 text-sm text-slate-600">{result.rows_seen} non-empty transaction rows checked.</p>
+              <h3 className="text-base font-semibold text-foreground" id="csv-import-results">Import results</h3>
+              <p className="mt-1 text-sm text-muted">{result.rows_seen} non-empty transaction rows checked.</p>
             </div>
             {stillPendingCount > 0 && <Badge variant="info">Refreshing {stillPendingCount} pending categorization{stillPendingCount === 1 ? "" : "s"}</Badge>}
           </div>
@@ -147,7 +147,7 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
             <SummaryCard label="Rows checked" value={result.rows_seen} />
           </div>
 
-          <label className="flex max-w-xs flex-col gap-1.5 text-xs font-semibold text-slate-600" htmlFor="csv-row-filter">
+          <label className="flex max-w-xs flex-col gap-1.5 text-xs font-semibold text-muted" htmlFor="csv-row-filter">
             Filter report rows
             <Select id="csv-row-filter" onChange={(event) => setRowFilter(event.currentTarget.value as RowFilter)} value={rowFilter}>
               <option value="all">All results</option>
@@ -157,10 +157,10 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
             </Select>
           </label>
 
-          {visibleRows.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No report rows match this filter.</p> :
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
+          {visibleRows.length === 0 ? <p className="rounded-md bg-surface-raised p-4 text-sm text-muted">No report rows match this filter.</p> :
+            <div className="overflow-x-auto rounded-sm border border-border">
               <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                <thead className="bg-surface-raised text-xs font-bold uppercase tracking-wide text-muted">
                   <tr><th className="px-4 py-3">CSV row</th><th className="px-4 py-3">Import result</th><th className="px-4 py-3">Categorization</th><th className="px-4 py-3">Details</th></tr>
                 </thead>
                 <tbody>
@@ -180,11 +180,11 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
                               : categorization === "failed"
                                 ? "Categorization failed; assign a category in the transactions list."
                                 : "Transaction added to the company ledger.";
-                    return <tr className="border-t border-slate-100" key={row.row_number}>
+                    return <tr className="border-t border-line" key={row.row_number}>
                       <td className="px-4 py-3 tabular-nums">{row.row_number}</td>
                       <td className="px-4 py-3"><Badge variant={resultVariant(row.status)}>{row.status}</Badge></td>
                       <td className="px-4 py-3">{categorizationLabel(categorization)}</td>
-                      <td className="px-4 py-3 text-slate-600">{details}</td>
+                      <td className="px-4 py-3 text-muted">{details}</td>
                     </tr>;
                   })}
                 </tbody>
@@ -197,8 +197,8 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
 }
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-xl bg-slate-50 px-4 py-3">
-    <p className="text-xs font-medium text-slate-500">{label}</p>
-    <p className="mt-1 text-xl font-semibold tabular-nums text-slate-950">{value}</p>
+  return <div className="rounded-md bg-surface-raised px-4 py-3">
+    <p className="text-xs font-medium text-muted">{label}</p>
+    <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{value}</p>
   </div>;
 }

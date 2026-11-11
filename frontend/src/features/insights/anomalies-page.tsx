@@ -40,7 +40,7 @@ function AnomalyCard({ anomaly, companyId, currency }: {
   const basis = anomaly.comparison_basis === "vendor" ? "Vendor history" : "Category history";
   const subject = anomaly.description || anomaly.category_name || "Expense";
 
-  return <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  return <article className="rounded-lg border border-border bg-surface p-5 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
@@ -50,22 +50,22 @@ function AnomalyCard({ anomaly, companyId, currency }: {
             {anomaly.explanation_source === "llm" ? "LLM explanation" : "Deterministic explanation"}
           </Badge>
         </div>
-        <h3 className="mt-3 break-words text-base font-semibold text-slate-950">{subject}</h3>
-        <p className="mt-1 text-xs text-slate-500">{formatDate(anomaly.date)}{anomaly.category_name ? ` · ${anomaly.category_name}` : ""}</p>
+        <h3 className="mt-3 break-words text-base font-semibold text-foreground">{subject}</h3>
+        <p className="mt-1 text-xs text-muted">{formatDate(anomaly.date)}{anomaly.category_name ? ` · ${anomaly.category_name}` : ""}</p>
       </div>
-      <p className="shrink-0 text-lg font-semibold tabular-nums text-slate-950">{formatMoney(anomaly.amount, currency)}</p>
+      <p className="shrink-0 text-lg font-semibold tabular-nums text-foreground">{formatMoney(anomaly.amount, currency)}</p>
     </div>
 
-    <dl className="mt-4 grid gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
+    <dl className="mt-4 grid gap-3 rounded-md bg-surface-raised p-4 sm:grid-cols-2 lg:grid-cols-4">
       <Metric label="Baseline average" value={formatMoney(anomaly.baseline_average, currency)} />
       <Metric label="Compared with" value={`${anomaly.baseline_transaction_count} prior expenses`} />
       <Metric label="Ratio to average" value={`${anomaly.ratio_to_average}×`} />
       <Metric label="Z-score" value={anomaly.z_score ?? "Not available"} />
     </dl>
 
-    <p className="mt-4 text-sm leading-6 text-slate-700">{anomaly.explanation}</p>
+    <p className="mt-4 text-sm leading-6 text-foreground-body">{anomaly.explanation}</p>
     <Link
-      className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg text-sm font-semibold text-cyan-900 underline decoration-cyan-300 underline-offset-4 hover:text-cyan-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-cyan-100"
+      className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-sm text-sm font-semibold text-accent underline decoration-accent underline-offset-4 hover:text-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/10"
       to={`/c/${companyId}/transactions/${anomaly.transaction_id}`}
     >
       <ExternalLink aria-hidden="true" className="size-4" />View transaction
@@ -75,14 +75,14 @@ function AnomalyCard({ anomaly, companyId, currency }: {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return <div>
-    <dt className="text-xs font-medium text-slate-500">{label}</dt>
-    <dd className="mt-1 break-words text-sm font-semibold tabular-nums text-slate-900">{value}</dd>
+    <dt className="text-xs font-medium text-muted">{label}</dt>
+    <dd className="mt-1 break-words text-sm font-semibold tabular-nums text-foreground">{value}</dd>
   </div>;
 }
 
 function TruncationNotice({ report }: { report: SpendingAnomalyReport }) {
   if (!report.scan_truncated && !report.anomalies_truncated) return null;
-  return <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950" role="status">
+  return <div className="flex items-start gap-3 rounded-md border border-caution/40 bg-caution/20 p-4 text-sm leading-6 text-pine" role="status">
     <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
     <p>
       {report.scan_truncated && "The scan reached its transaction limit, so some recent expenses were not checked. "}
@@ -124,31 +124,31 @@ function CompanyAnomalies({ companyId, currency }: { companyId: string; currency
 
   return <div className="mx-auto max-w-5xl space-y-6">
     <div>
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-900">Insights · {role}</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Spending anomalies</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Compare recent company expenses with earlier vendor or category spending. The scan runs only when you ask for it.</p>
+      <p className="fp-eyebrow">Insights · {role}</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Spending anomalies</h1>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Compare recent company expenses with earlier vendor or category spending. The scan runs only when you ask for it.</p>
     </div>
 
     <Card>
-      <CardHeader className="border-b border-slate-100">
+      <CardHeader className="border-b border-line">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-900"><Activity aria-hidden="true" className="size-5" /></span>
+          <span className="grid size-10 shrink-0 place-items-center rounded-md bg-caution/20 text-pine"><Activity aria-hidden="true" className="size-5" /></span>
           <div><CardTitle>Choose analysis windows</CardTitle><CardDescription className="mt-1">Recent expenses are compared against a separate earlier baseline. The company data is read-only.</CardDescription></div>
         </div>
       </CardHeader>
       <div className="space-y-4 p-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor="anomaly-days">
+          <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor="anomaly-days">
             Recent scan window (1–90 days)
             <Input id="anomaly-days" max={DAY_MAX} min={DAY_MIN} onChange={(event) => { setDays(event.currentTarget.value); clearReport(); }} type="number" value={days} />
           </label>
-          <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor="anomaly-baseline-days">
+          <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor="anomaly-baseline-days">
             Earlier baseline window (30–730 days)
             <Input id="anomaly-baseline-days" max={BASELINE_MAX} min={BASELINE_MIN} onChange={(event) => { setBaselineDays(event.currentTarget.value); clearReport(); }} type="number" value={baselineDays} />
           </label>
         </div>
-        <p className="text-xs leading-5 text-slate-500">Windows do not overlap. The baseline ends the day before the recent scan begins. Explanation wording may be AI-generated or deterministic; the amounts and comparisons are computed by FinPilot.</p>
-        {!valid && <p className="text-sm font-medium text-rose-700" role="alert">Enter whole-day values within the ranges shown.</p>}
+        <p className="text-xs leading-5 text-muted">Windows do not overlap. The baseline ends the day before the recent scan begins. Explanation wording may be AI-generated or deterministic; the amounts and comparisons are computed by FinPilot.</p>
+        {!valid && <p className="text-sm font-medium text-negative" role="alert">Enter whole-day values within the ranges shown.</p>}
         <Button disabled={!valid || scan.isPending} onClick={runScan}>
           <Search aria-hidden="true" className="size-4" />{scan.isPending ? "Scanning expenses…" : "Run anomaly scan"}
         </Button>
@@ -159,9 +159,9 @@ function CompanyAnomalies({ companyId, currency }: { companyId: string; currency
     {scan.isPending && <Card><LoadingState label="Checking recent expenses against company history" /></Card>}
     {currentReport && <ReportView companyId={companyId} currency={currency} report={currentReport} />}
     {!currentReport && !scan.isPending && !scan.error && <Card className="px-6 py-10 text-center">
-      <Search aria-hidden="true" className="mx-auto size-7 text-slate-400" />
-      <h2 className="mt-3 text-base font-semibold text-slate-900">No scan has been run yet</h2>
-      <p className="mt-1 text-sm text-slate-600">Choose a recent window and a baseline, then run the scan to see results for those dates.</p>
+      <Search aria-hidden="true" className="mx-auto size-7 text-muted" />
+      <h2 className="mt-3 text-base font-semibold text-foreground">No scan has been run yet</h2>
+      <p className="mt-1 text-sm text-muted">Choose a recent window and a baseline, then run the scan to see results for those dates.</p>
     </Card>}
   </div>;
 }
@@ -176,19 +176,19 @@ function ReportView({ companyId, currency, report }: {
       <CardHeader className="flex flex-wrap items-start justify-between gap-3">
         <div><CardTitle id="anomaly-report-heading">Scan report</CardTitle><CardDescription className="mt-1">{report.scanned_transactions} expenses checked in the recent window.</CardDescription></div>
         <Badge variant="neutral">On-demand · read-only</Badge>
-        <div className="grid w-full gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2">
-          <p className="text-sm text-slate-700"><span className="font-semibold">Recent window:</span> {formatDate(report.window_start)} – {formatDate(report.window_end)}</p>
-          <p className="text-sm text-slate-700"><span className="font-semibold">Baseline:</span> {formatDate(report.baseline_start)} – {formatDate(report.baseline_end)}</p>
+        <div className="grid w-full gap-3 border-t border-line pt-4 sm:grid-cols-2">
+          <p className="text-sm text-foreground-body"><span className="font-semibold">Recent window:</span> {formatDate(report.window_start)} – {formatDate(report.window_end)}</p>
+          <p className="text-sm text-foreground-body"><span className="font-semibold">Baseline:</span> {formatDate(report.baseline_start)} – {formatDate(report.baseline_end)}</p>
         </div>
       </CardHeader>
     </Card>
     <TruncationNotice report={report} />
     {report.anomalies.length === 0 ? <Card className="px-6 py-10 text-center">
-      <Activity aria-hidden="true" className="mx-auto size-7 text-emerald-700" />
-      <h2 className="mt-3 text-base font-semibold text-slate-900">No unusual expenses found</h2>
-      <p className="mt-1 text-sm text-slate-600">No expenses in {formatDate(report.window_start)} – {formatDate(report.window_end)} crossed the anomaly threshold.</p>
+      <Activity aria-hidden="true" className="mx-auto size-7 text-positive" />
+      <h2 className="mt-3 text-base font-semibold text-foreground">No unusual expenses found</h2>
+      <p className="mt-1 text-sm text-muted">No expenses in {formatDate(report.window_start)} – {formatDate(report.window_end)} crossed the anomaly threshold.</p>
     </Card> : <div className="space-y-3">
-      <h2 className="text-base font-semibold text-slate-900">Unusual expenses ({report.anomalies.length})</h2>
+      <h2 className="text-base font-semibold text-foreground">Unusual expenses ({report.anomalies.length})</h2>
       {report.anomalies.map((anomaly) => <AnomalyCard anomaly={anomaly} companyId={companyId} currency={currency} key={anomaly.transaction_id} />)}
     </div>}
   </section>;

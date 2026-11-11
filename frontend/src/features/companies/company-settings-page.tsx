@@ -11,11 +11,11 @@ export function CompanySettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-800">Workspace</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+        <p className="fp-eyebrow">Workspace</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
           Company settings
         </h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <p className="mt-2 text-sm leading-6 text-muted">
           Review the company identity, accounting currency, and your access level.
         </p>
       </div>
@@ -23,7 +23,7 @@ export function CompanySettingsPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-start gap-4">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-900">
+            <span className="grid size-11 shrink-0 place-items-center rounded-md bg-signal-deep/10 text-accent">
               <Building2 aria-hidden="true" className="size-5" />
             </span>
             <div className="min-w-0">
@@ -34,7 +34,7 @@ export function CompanySettingsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-start gap-4">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-900">
+            <span className="grid size-11 shrink-0 place-items-center rounded-md bg-positive/10 text-positive">
               <CircleDollarSign aria-hidden="true" className="size-5" />
             </span>
             <div>
@@ -51,7 +51,7 @@ export function CompanySettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-800">
+              <span className="grid size-10 shrink-0 place-items-center rounded-md bg-surface-raised text-accent">
                 <ShieldCheck aria-hidden="true" className="size-5" />
               </span>
               <div>

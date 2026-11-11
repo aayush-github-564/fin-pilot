@@ -52,8 +52,8 @@ function isProcessing(status: string) {
 function MissingField({ label, value }: { label: string; value: string | null | undefined }) {
   const missing = value === null || value === undefined || value.trim() === "";
   return <div className="space-y-1">
-    <dt className="flex items-center gap-2 text-xs font-medium text-slate-500">{label}{missing && <Badge variant="danger">Needs review</Badge>}</dt>
-    <dd className={`break-words text-sm font-semibold ${missing ? "text-amber-900" : "text-slate-900"}`}>{value || "Not extracted"}</dd>
+    <dt className="flex items-center gap-2 text-xs font-medium text-muted">{label}{missing && <Badge variant="danger">Needs review</Badge>}</dt>
+    <dd className={`break-words text-sm font-semibold ${missing ? "text-pine" : "text-foreground"}`}>{value || "Not extracted"}</dd>
   </div>;
 }
 
@@ -95,24 +95,24 @@ function InvoiceEditForm({
     });
   };
 
-  return <div className="space-y-4 rounded-xl border border-cyan-100 bg-cyan-50/50 p-4">
-    <h3 className="text-sm font-semibold text-slate-900">{confirmed ? "Update payment status" : "Review extracted details"}</h3>
+  return <div className="space-y-4 rounded-md border border-border bg-signal-deep/10 p-4">
+    <h3 className="text-sm font-semibold text-foreground">{confirmed ? "Update payment status" : "Review extracted details"}</h3>
     {!confirmed && <div className="grid gap-3 sm:grid-cols-2">
-      <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor={`invoice-direction-${invoice.id}`}>Document direction
+      <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-direction-${invoice.id}`}>Document direction
         <Select id={`invoice-direction-${invoice.id}`} onChange={(event) => setDirection(event.currentTarget.value as InvoiceDirection | "")} value={direction}>
           <option value="">Choose direction</option><option value="purchase">Purchase · money owed to vendor</option><option value="sale">Sale · money owed by customer</option>
         </Select>
       </label>
-      <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor={`invoice-vendor-${invoice.id}`}>Vendor or customer<Input autoComplete="organization" id={`invoice-vendor-${invoice.id}`} onChange={(event) => setVendor(event.currentTarget.value)} value={vendor} /></label>
-      <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor={`invoice-amount-${invoice.id}`}>Invoice total<Input id={`invoice-amount-${invoice.id}`} inputMode="decimal" onChange={(event) => setAmount(event.currentTarget.value)} placeholder="0.00" value={amount} /></label>
-      <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor={`invoice-date-${invoice.id}`}>Invoice date<Input id={`invoice-date-${invoice.id}`} onChange={(event) => setDate(event.currentTarget.value)} type="date" value={date} /></label>
+      <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-vendor-${invoice.id}`}>Vendor or customer<Input autoComplete="organization" id={`invoice-vendor-${invoice.id}`} onChange={(event) => setVendor(event.currentTarget.value)} value={vendor} /></label>
+      <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-amount-${invoice.id}`}>Invoice total<Input id={`invoice-amount-${invoice.id}`} inputMode="decimal" onChange={(event) => setAmount(event.currentTarget.value)} placeholder="0.00" value={amount} /></label>
+      <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-date-${invoice.id}`}>Invoice date<Input id={`invoice-date-${invoice.id}`} onChange={(event) => setDate(event.currentTarget.value)} type="date" value={date} /></label>
     </div>}
-    <label className="block max-w-xs space-y-1.5 text-xs font-semibold text-slate-600" htmlFor={`invoice-status-${invoice.id}`}>Payment status
+    <label className="block max-w-xs space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-status-${invoice.id}`}>Payment status
       <Select id={`invoice-status-${invoice.id}`} onChange={(event) => setStatus(event.currentTarget.value as InvoiceStatus)} value={status}>
         {PAYMENT_STATUSES.map((option) => <option key={option} value={option}>{option.charAt(0).toUpperCase() + option.slice(1)}</option>)}
       </Select>
     </label>
-    {validationError && <p className="text-sm text-rose-800" role="alert">{validationError}</p>}
+    {validationError && <p className="text-sm text-negative" role="alert">{validationError}</p>}
     <div className="flex flex-wrap gap-2"><Button disabled={pending} onClick={submit} size="sm">{pending ? "Saving…" : "Save changes"}</Button><Button disabled={pending} onClick={onCancel} size="sm" variant="secondary">Cancel</Button></div>
   </div>;
 }
@@ -157,7 +157,7 @@ function InvoiceCard({ invoice, companyId, currency, canWrite }: {
   };
 
   return <Card className="overflow-hidden">
-    <CardHeader className="border-b border-slate-100">
+    <CardHeader className="border-b border-line">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -169,14 +169,14 @@ function InvoiceCard({ invoice, companyId, currency, canWrite }: {
           <CardTitle className="mt-3 break-words">{invoice.vendor?.trim() || "Vendor or customer not extracted"}</CardTitle>
           <CardDescription className="mt-1">Invoice date: {formatDate(invoice.date)}{invoice.confirmed_at ? ` · Reviewed ${formatDate(invoice.confirmed_at.slice(0, 10))}` : ""}</CardDescription>
         </div>
-        <p className="shrink-0 text-lg font-semibold tabular-nums text-slate-950">{invoice.amount === null || invoice.amount === undefined ? "Amount not extracted" : formatMoney(invoice.amount, currency)}</p>
+        <p className="shrink-0 text-lg font-semibold tabular-nums text-foreground">{invoice.amount === null || invoice.amount === undefined ? "Amount not extracted" : formatMoney(invoice.amount, currency)}</p>
       </div>
     </CardHeader>
 
     <div className="space-y-4 p-5">
-      {(invoice.vendor === null || invoice.vendor?.trim() === "" || invoice.amount === null || invoice.amount === undefined || !invoice.date || !invoice.direction) && !pendingExtraction && <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-950" role="status"><TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Some fields were not extracted. Review and correct the marked details before confirming.</p>}
-      {invoice.processing_status === "failed" && <p className="text-sm text-rose-800">Automatic extraction failed. You can enter the invoice details manually and review them.</p>}
-      {pendingExtraction && <p className="text-sm text-slate-600">FinPilot is reading the document. This invoice will refresh automatically for a limited time while processing.</p>}
+      {(invoice.vendor === null || invoice.vendor?.trim() === "" || invoice.amount === null || invoice.amount === undefined || !invoice.date || !invoice.direction) && !pendingExtraction && <p className="flex items-start gap-2 rounded-md border border-caution/40 bg-caution/20 p-3 text-sm leading-5 text-pine" role="status"><TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Some fields were not extracted. Review and correct the marked details before confirming.</p>}
+      {invoice.processing_status === "failed" && <p className="text-sm text-negative">Automatic extraction failed. You can enter the invoice details manually and review them.</p>}
+      {pendingExtraction && <p className="text-sm text-muted">FinPilot is reading the document. This invoice will refresh automatically for a limited time while processing.</p>}
       <dl className="grid gap-3 sm:grid-cols-2">
         <MissingField label="Vendor or customer" value={invoice.vendor} />
         <MissingField label="Direction" value={invoice.direction === "purchase" ? "Purchase" : invoice.direction === "sale" ? "Sale" : null} />
@@ -191,12 +191,12 @@ function InvoiceCard({ invoice, companyId, currency, canWrite }: {
         pending={update.isPending}
       />}
       {(update.error || confirm.error || download.error) && <ErrorMessage>{errorText(update.error ?? confirm.error ?? download.error, "This invoice action could not be completed.")}</ErrorMessage>}
-      <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+      <div className="flex flex-wrap gap-2 border-t border-line pt-4">
         {invoice.file_reference && <Button disabled={download.isPending} onClick={() => void downloadFile()} size="sm" variant="secondary"><Download aria-hidden="true" className="size-4" />{download.isPending ? "Downloading…" : "Download document"}</Button>}
         {canWrite && !pendingExtraction && !invoice.confirmed_at && <Button disabled={busy} onClick={() => { setEditing(true); update.reset(); confirm.reset(); }} size="sm" variant="secondary">Review or edit</Button>}
         {canWrite && invoice.confirmed_at && !editing && <Button disabled={busy} onClick={() => { setEditing(true); update.reset(); }} size="sm" variant="secondary">Update payment status</Button>}
         {canConfirm && !editing && <Button disabled={busy} onClick={() => confirm.mutate(invoice.id)} size="sm"><Check aria-hidden="true" className="size-4" />{confirm.isPending ? "Confirming…" : "Confirm review"}</Button>}
-        {canWrite && !invoice.confirmed_at && !pendingExtraction && !completeFieldsPresent && !editing && <span className="self-center text-xs text-slate-500">Fill all required details to enable confirmation.</span>}
+        {canWrite && !invoice.confirmed_at && !pendingExtraction && !completeFieldsPresent && !editing && <span className="self-center text-xs text-muted">Fill all required details to enable confirmation.</span>}
       </div>
     </div>
   </Card>;
@@ -245,23 +245,23 @@ function InvoiceUploadForm({ companyId, canWrite }: { companyId: string; canWrit
   };
 
   return <Card className="overflow-hidden">
-    <CardHeader className="border-b border-slate-100">
-      <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-900"><FileUp aria-hidden="true" className="size-5" /></span><div><CardTitle>Upload an invoice or receipt</CardTitle><CardDescription className="mt-1">FinPilot reads the document and suggests the vendor, total, and date for you to review.</CardDescription></div></div>
+    <CardHeader className="border-b border-line">
+      <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/10 text-accent"><FileUp aria-hidden="true" className="size-5" /></span><div><CardTitle>Upload an invoice or receipt</CardTitle><CardDescription className="mt-1">FinPilot reads the document and suggests the vendor, total, and date for you to review.</CardDescription></div></div>
     </CardHeader>
     <div className="space-y-4 p-5">
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit}>
-        <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor="invoice-direction">Direction
+        <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor="invoice-direction">Direction
           <Select id="invoice-direction" onChange={(event) => setDirection(event.currentTarget.value as InvoiceDirection)} value={direction}><option value="purchase">Purchase · money owed to vendor</option><option value="sale">Sale · money owed by customer</option></Select>
         </label>
-        <label className="space-y-1.5 text-xs font-semibold text-slate-600 sm:col-span-2" htmlFor="invoice-file">Invoice or receipt file
+        <label className="space-y-1.5 text-xs font-semibold text-muted sm:col-span-2" htmlFor="invoice-file">Invoice or receipt file
           <Input accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" id="invoice-file" onChange={(event) => selectFile(event.currentTarget.files?.[0] ?? null)} ref={fileInput} type="file" />
         </label>
-        <p className="text-xs leading-5 text-slate-500 sm:col-span-2">Supported file types: PDF, PNG, JPG/JPEG, and WebP. The purchase/sale direction is saved for review. Extraction may leave fields blank if they are unclear.</p>
+        <p className="text-xs leading-5 text-muted sm:col-span-2">Supported file types: PDF, PNG, JPG/JPEG, and WebP. The purchase/sale direction is saved for review. Extraction may leave fields blank if they are unclear.</p>
         <div className="sm:col-span-2"><Button disabled={!file || Boolean(fileError) || upload.isPending} type="submit"><ReceiptText aria-hidden="true" className="size-4" />{upload.isPending ? "Uploading…" : "Upload document"}</Button></div>
       </form>
       {fileError && <ErrorMessage>{fileError}</ErrorMessage>}
       {upload.error && <ErrorMessage>{errorText(upload.error, "The invoice could not be uploaded.")}</ErrorMessage>}
-      {uploadedName && <p className="text-sm text-emerald-800" role="status">{uploadedName} uploaded. It will appear in the review list shortly.</p>}
+      {uploadedName && <p className="text-sm text-positive" role="status">{uploadedName} uploaded. It will appear in the review list shortly.</p>}
     </div>
   </Card>;
 }
@@ -283,30 +283,30 @@ function CompanyInvoices({ companyId, currency, canWrite }: { companyId: string;
 
   return <div className="mx-auto max-w-5xl space-y-6">
     <div>
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-900">Documents</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Invoices</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Upload a document, check the extracted details, and confirm the review when they are correct.</p>
+      <p className="fp-eyebrow">Documents</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Invoices</h1>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Upload a document, check the extracted details, and confirm the review when they are correct.</p>
     </div>
-    <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950"><TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" /><p><strong>Invoices do not change cash flow.</strong> Confirming a document records that you reviewed it. Record money actually received or paid separately in Transactions.</p></div>
+    <div className="flex items-start gap-3 rounded-lg border border-caution/40 bg-caution/20 p-4 text-sm leading-6 text-pine"><TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" /><p><strong>Invoices do not change cash flow.</strong> Confirming a document records that you reviewed it. Record money actually received or paid separately in Transactions.</p></div>
     <InvoiceUploadForm canWrite={canWrite} companyId={companyId} />
     <Card className="overflow-hidden">
-      <CardHeader className="border-b border-slate-100">
+      <CardHeader className="border-b border-line">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle>Invoice review list</CardTitle><CardDescription className="mt-1">Newest documents first. Viewers can inspect and download; owners and accountants can upload, edit, and confirm.</CardDescription></div><Badge variant="neutral">{invoices.data ? `${allItems.length} loaded` : "Loading"}</Badge></div>
         <div className="grid gap-3 pt-3 sm:grid-cols-2">
-          <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor="invoice-filter-direction">Direction
+          <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor="invoice-filter-direction">Direction
             <Select id="invoice-filter-direction" onChange={(event) => setDirectionFilter(event.currentTarget.value as InvoiceDirection | "")} value={directionFilter}><option value="">All directions</option><option value="purchase">Purchases</option><option value="sale">Sales</option></Select>
           </label>
-          <label className="space-y-1.5 text-xs font-semibold text-slate-600" htmlFor="invoice-filter-status">Payment status
+          <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor="invoice-filter-status">Payment status
             <Select id="invoice-filter-status" onChange={(event) => setStatusFilter(event.currentTarget.value as InvoiceStatus | "")} value={statusFilter}><option value="">All statuses</option>{PAYMENT_STATUSES.map((status) => <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>)}</Select>
           </label>
         </div>
       </CardHeader>
-      {invoices.isPending ? <LoadingState label="Loading invoices" /> : invoices.isError ? <div className="space-y-3 p-5"><ErrorMessage>{errorText(invoices.error, "Invoices could not load.")}</ErrorMessage><Button onClick={() => void invoices.refetch()} variant="secondary"><RotateCw aria-hidden="true" className="size-4" />Try again</Button></div> : visibleItems.length === 0 ? <div className="px-6 py-12 text-center"><ReceiptText aria-hidden="true" className="mx-auto size-7 text-slate-400" /><h2 className="mt-3 text-base font-semibold text-slate-900">{allItems.length === 0 ? "No invoices yet" : "No invoices match these filters"}</h2><p className="mt-1 text-sm text-slate-600">{allItems.length === 0 ? canWrite ? "Upload an invoice or receipt to start a review." : "No invoice documents have been added to this company yet." : "Change or clear the direction and payment status filters."}</p></div> : <div className="space-y-3 p-4 sm:p-5">
-        {hasProcessing && !atRefreshLimit && <p className="flex items-center gap-2 text-xs text-cyan-900" role="status"><RotateCw aria-hidden="true" className="size-3.5 animate-spin" />Refreshing invoices while extraction is running. Automatic checks stop after about 90 seconds.</p>}
-        {hasProcessing && atRefreshLimit && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3" role="status"><p className="text-sm text-amber-900">Extraction is still running. Automatic checks have paused.</p><Button disabled={invoices.isFetching} onClick={() => void invoices.refetch()} size="sm" variant="secondary"><RotateCw aria-hidden="true" className="size-4" />{invoices.isFetching ? "Refreshing…" : "Refresh invoices"}</Button></div>}
+      {invoices.isPending ? <LoadingState label="Loading invoices" /> : invoices.isError ? <div className="space-y-3 p-5"><ErrorMessage>{errorText(invoices.error, "Invoices could not load.")}</ErrorMessage><Button onClick={() => void invoices.refetch()} variant="secondary"><RotateCw aria-hidden="true" className="size-4" />Try again</Button></div> : visibleItems.length === 0 ? <div className="px-6 py-12 text-center"><ReceiptText aria-hidden="true" className="mx-auto size-7 text-muted" /><h2 className="mt-3 text-base font-semibold text-foreground">{allItems.length === 0 ? "No invoices yet" : "No invoices match these filters"}</h2><p className="mt-1 text-sm text-muted">{allItems.length === 0 ? canWrite ? "Upload an invoice or receipt to start a review." : "No invoice documents have been added to this company yet." : "Change or clear the direction and payment status filters."}</p></div> : <div className="space-y-3 p-4 sm:p-5">
+        {hasProcessing && !atRefreshLimit && <p className="flex items-center gap-2 text-xs text-accent" role="status"><RotateCw aria-hidden="true" className="size-3.5 animate-spin" />Refreshing invoices while extraction is running. Automatic checks stop after about 90 seconds.</p>}
+        {hasProcessing && atRefreshLimit && <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-caution/40 bg-caution/20 p-3" role="status"><p className="text-sm text-pine">Extraction is still running. Automatic checks have paused.</p><Button disabled={invoices.isFetching} onClick={() => void invoices.refetch()} size="sm" variant="secondary"><RotateCw aria-hidden="true" className="size-4" />{invoices.isFetching ? "Refreshing…" : "Refresh invoices"}</Button></div>}
         {visibleItems.map((invoice) => <InvoiceCard canWrite={canWrite} companyId={companyId} currency={currency} invoice={invoice} key={invoice.id} />)}
-        {canLoadMore && <div className="flex justify-center border-t border-slate-100 pt-4"><Button disabled={invoices.isFetching} onClick={() => setLimit((current) => Math.min(MAX_PAGE_SIZE, current + PAGE_SIZE))} variant="secondary">{invoices.isFetching ? "Loading more…" : "Load more invoices"}</Button></div>}
-        {limit === MAX_PAGE_SIZE && allItems.length === limit && <p className="text-center text-xs text-slate-500">Showing the maximum of {MAX_PAGE_SIZE} invoices. Use the filters to narrow this list.</p>}
+        {canLoadMore && <div className="flex justify-center border-t border-line pt-4"><Button disabled={invoices.isFetching} onClick={() => setLimit((current) => Math.min(MAX_PAGE_SIZE, current + PAGE_SIZE))} variant="secondary">{invoices.isFetching ? "Loading more…" : "Load more invoices"}</Button></div>}
+        {limit === MAX_PAGE_SIZE && allItems.length === limit && <p className="text-center text-xs text-muted">Showing the maximum of {MAX_PAGE_SIZE} invoices. Use the filters to narrow this list.</p>}
       </div>}
     </Card>
   </div>;

@@ -65,28 +65,28 @@ function ReviewItem({
   const noAmount = /^-?0+(?:\.0+)?$/.test(transaction.amount);
 
   return (
-    <article className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.8fr)_auto] lg:items-center">
+    <article className="grid gap-5 rounded-lg border border-border bg-surface p-5 shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.8fr)_auto] lg:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="neutral">Needs review</Badge>
-          <span className="text-xs text-slate-500">{transaction.date}</span>
+          <span className="text-xs text-muted">{transaction.date}</span>
           <Badge variant="info">{transaction.source === "upload" ? "Imported" : "Manual"}</Badge>
         </div>
-        <h2 className="mt-3 truncate text-base font-semibold text-slate-950" title={transaction.description ?? "No description"}>
+        <h2 className="mt-3 truncate text-base font-semibold text-foreground" title={transaction.description ?? "No description"}>
           {transaction.description || "No description"}
         </h2>
-        <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-slate-800">
+        <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-foreground-body">
           {!noAmount && (transaction.amount.startsWith("-")
-            ? <ArrowUpRight aria-hidden="true" className="size-4 text-rose-700" />
-            : <ArrowDownRight aria-hidden="true" className="size-4 text-emerald-700" />)}
+            ? <ArrowUpRight aria-hidden="true" className="size-4 text-negative" />
+            : <ArrowDownRight aria-hidden="true" className="size-4 text-positive" />)}
           {formatMoney(transaction.amount, currency)}
         </p>
       </div>
 
-      <div className="rounded-xl bg-slate-50 p-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Suggested category</p>
-        <p className="mt-1 font-semibold text-slate-900">{suggestion?.name ?? (transaction.suggested_category_id ? "Suggestion unavailable" : "No suggestion")}</p>
-        <p className="mt-1 text-xs text-slate-600">{suggestedConfidence(transaction.suggestion_confidence)}</p>
+      <div className="rounded-md bg-surface-raised p-4">
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">Suggested category</p>
+        <p className="mt-1 font-semibold text-foreground">{suggestion?.name ?? (transaction.suggested_category_id ? "Suggestion unavailable" : "No suggestion")}</p>
+        <p className="mt-1 text-xs text-muted">{suggestedConfidence(transaction.suggestion_confidence)}</p>
       </div>
 
       {canWrite && <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
@@ -128,13 +128,13 @@ export function ReviewQueuePage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-900">Categorization</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Review queue</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Check uncertain transaction categories. Accept a suggestion or choose a category that matches the transaction direction.</p>
+        <p className="fp-eyebrow">Categorization</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Review queue</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Check uncertain transaction categories. Accept a suggestion or choose a category that matches the transaction direction.</p>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 border-b border-slate-100">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 border-b border-line">
           <div><CardTitle>Transactions needing review</CardTitle><CardDescription className="mt-1">Suggestions are not applied until an authorized member confirms them.</CardDescription></div>
           <Badge variant="neutral">{queue.data ? `${queue.data.length} on this page` : "Loading queue"}</Badge>
         </CardHeader>
@@ -146,7 +146,7 @@ export function ReviewQueuePage() {
         </div>}
         {categories.isError && <div className="px-5 pt-4"><ErrorMessage>{queryError(categories.error)}</ErrorMessage></div>}
 
-        {queue.isPending ? <LoadingState label="Loading review queue" /> : queue.isError ? <div className="space-y-3 p-5"><ErrorMessage>{queryError(queue.error)}</ErrorMessage><Button onClick={() => void queue.refetch()} variant="secondary">Try again</Button></div> : queue.data.length === 0 ? <div className="px-6 py-14 text-center"><h2 className="text-lg font-semibold text-slate-900">Nothing needs review</h2><p className="mt-2 text-sm text-slate-600">New uncertain or failed categorizations will appear here.</p></div> : <div className="space-y-3 p-5">
+        {queue.isPending ? <LoadingState label="Loading review queue" /> : queue.isError ? <div className="space-y-3 p-5"><ErrorMessage>{queryError(queue.error)}</ErrorMessage><Button onClick={() => void queue.refetch()} variant="secondary">Try again</Button></div> : queue.data.length === 0 ? <div className="px-6 py-14 text-center"><h2 className="text-lg font-semibold text-foreground">Nothing needs review</h2><p className="mt-2 text-sm text-muted">New uncertain or failed categorizations will appear here.</p></div> : <div className="space-y-3 p-5">
           {queue.data.map((transaction) => <ReviewItem
             canWrite={canWrite && !categories.isError}
             categories={categories.data ?? []}
@@ -166,8 +166,8 @@ export function ReviewQueuePage() {
           />)}
         </div>}
 
-        {queue.data && queue.data.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
-          <p className="text-sm text-slate-600">Page {Math.floor(skip / PAGE_SIZE) + 1}</p>
+        {queue.data && queue.data.length > 0 && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4">
+          <p className="text-sm text-muted">Page {Math.floor(skip / PAGE_SIZE) + 1}</p>
           <div className="flex gap-2">
             <Button disabled={skip === 0} onClick={() => setSkip(Math.max(0, skip - PAGE_SIZE))} size="sm" variant="secondary"><ChevronLeft aria-hidden="true" className="size-4" />Previous</Button>
             <Button disabled={queue.data.length < PAGE_SIZE} onClick={() => setSkip(skip + PAGE_SIZE)} size="sm" variant="secondary">Next<ChevronRight aria-hidden="true" className="size-4" /></Button>

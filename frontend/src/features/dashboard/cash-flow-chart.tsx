@@ -22,10 +22,10 @@ export function CashFlowChart({
 }) {
   if (metrics.transaction_count === 0) {
     return (
-      <div className="grid min-h-64 place-items-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 text-center">
+      <div className="grid min-h-64 place-items-center rounded-md border border-dashed border-border bg-surface-raised px-5 text-center">
         <div>
-          <p className="font-semibold text-slate-800">No cash movement in this range</p>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="font-semibold text-foreground-body">No cash movement in this range</p>
+          <p className="mt-1 text-sm text-muted">
             The chart will fill in as company transactions are recorded.
           </p>
         </div>
@@ -50,20 +50,20 @@ export function CashFlowChart({
           data={chartData}
           margin={{ top: 12, right: 8, left: 4, bottom: 4 }}
         >
-          <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" vertical={false} />
+          <CartesianGrid stroke="var(--fp-card-line)" strokeDasharray="4 4" vertical={false} />
           <XAxis
             axisLine={false}
             dataKey="period_start"
             tickFormatter={(value: string) => formatPeriod(value, metrics.granularity)}
             tickLine={false}
             tickMargin={10}
-            tick={{ fill: "#64748b", fontSize: 11 }}
+            tick={{ fill: "var(--fp-text-muted)", fontSize: 12 }}
           />
           <YAxis
             axisLine={false}
             tickFormatter={(value: number) => formatCompactMoney(value, currencyCode)}
             tickLine={false}
-            tick={{ fill: "#64748b", fontSize: 11 }}
+            tick={{ fill: "var(--fp-text-muted)", fontSize: 12 }}
             width={72}
           />
           <Tooltip
@@ -72,11 +72,11 @@ export function CashFlowChart({
               name === "inflows" ? "Inflows" : "Outflows",
             ]}
             labelFormatter={(value) => formatPeriod(String(value), metrics.granularity, true)}
-            contentStyle={{ borderRadius: "0.75rem", borderColor: "#e2e8f0" }}
+            contentStyle={{ borderRadius: "var(--fp-radius-md)", borderColor: "var(--fp-card-line)" }}
           />
           <Legend formatter={(value) => (value === "inflows" ? "Inflows" : "Outflows")} />
-          <Bar dataKey="inflows" fill="#0e7490" maxBarSize={28} radius={[5, 5, 0, 0]} />
-          <Bar dataKey="outflows" fill="#f59e0b" maxBarSize={28} radius={[5, 5, 0, 0]} />
+          <Bar dataKey="inflows" fill="var(--fp-signal-deep)" maxBarSize={28} radius={0} />
+          <Bar dataKey="outflows" fill="var(--fp-clay)" maxBarSize={28} radius={0} />
         </BarChart>
       </ResponsiveContainer>
     </figure>

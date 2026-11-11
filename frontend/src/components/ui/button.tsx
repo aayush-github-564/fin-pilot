@@ -5,14 +5,14 @@ import { forwardRef, type ComponentPropsWithoutRef } from "react";
 import { cn } from "../../lib/utils";
 
 const buttonStyles = cva(
-  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-cyan-200 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/20 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-slate-950 text-white hover:bg-slate-800",
-        secondary: "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50",
-        quiet: "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
-        danger: "bg-rose-600 text-white hover:bg-rose-700",
+        primary: "bg-dark-bg text-dark-text hover:bg-dark-surface",
+        secondary: "border border-border bg-surface text-foreground-body hover:bg-surface-raised",
+        quiet: "text-muted hover:bg-linen hover:text-foreground",
+        danger: "bg-negative text-dark-text hover:bg-negative/90",
       },
       size: {
         default: "min-h-11 px-4 py-2.5",

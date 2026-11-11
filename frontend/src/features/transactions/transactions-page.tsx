@@ -103,7 +103,7 @@ function TransactionEditor({
   const validCategories = categories.filter((category) => category.kind === categoryKindForDirection(direction));
 
   return (
-    <Card className="border-cyan-200 bg-cyan-50/50">
+    <Card className="border-border bg-signal-deep/10">
       <CardHeader>
         <CardTitle>{initial ? "Edit transaction" : "Record a transaction"}</CardTitle>
         <CardDescription>
@@ -116,34 +116,34 @@ function TransactionEditor({
         onSubmit={form.handleSubmit(onSave)}
       >
         {error ? <div className="sm:col-span-2 xl:col-span-5"><ErrorMessage>{errorText(error, "The transaction could not be saved.")}</ErrorMessage></div> : null}
-        <label className="space-y-1.5 text-sm font-medium text-slate-700">
+        <label className="space-y-1.5 text-sm font-medium text-foreground-body">
           Date
           <Input type="date" {...form.register("date")} />
-          {form.formState.errors.date && <span className="block text-xs text-rose-700">{form.formState.errors.date.message}</span>}
+          {form.formState.errors.date && <span className="block text-xs text-negative">{form.formState.errors.date.message}</span>}
         </label>
-        <label className="space-y-1.5 text-sm font-medium text-slate-700">
+        <label className="space-y-1.5 text-sm font-medium text-foreground-body">
           Direction
           <Select {...form.register("direction")}>
             <option value="outflow">Outflow</option>
             <option value="inflow">Inflow</option>
           </Select>
         </label>
-        <label className="space-y-1.5 text-sm font-medium text-slate-700">
+        <label className="space-y-1.5 text-sm font-medium text-foreground-body">
           Amount
           <Input inputMode="decimal" placeholder="0.00" {...form.register("amount")} />
-          {form.formState.errors.amount && <span className="block text-xs text-rose-700">{form.formState.errors.amount.message}</span>}
+          {form.formState.errors.amount && <span className="block text-xs text-negative">{form.formState.errors.amount.message}</span>}
         </label>
-        <label className="space-y-1.5 text-sm font-medium text-slate-700">
+        <label className="space-y-1.5 text-sm font-medium text-foreground-body">
           Category
           <Select data-testid="transaction-category-select" {...form.register("category_id")}>
             <option value="">Uncategorized</option>
             {validCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </Select>
         </label>
-        <label className="space-y-1.5 text-sm font-medium text-slate-700 sm:col-span-2 xl:col-span-1">
+        <label className="space-y-1.5 text-sm font-medium text-foreground-body sm:col-span-2 xl:col-span-1">
           Description
           <Input autoFocus={!initial} placeholder="e.g. Office supplies" {...form.register("description")} />
-          {form.formState.errors.description && <span className="block text-xs text-rose-700">{form.formState.errors.description.message}</span>}
+          {form.formState.errors.description && <span className="block text-xs text-negative">{form.formState.errors.description.message}</span>}
         </label>
         <div className="flex flex-wrap justify-end gap-2 sm:col-span-2 xl:col-span-5">
           <Button disabled={pending} onClick={onCancel} type="button" variant="secondary">Cancel</Button>
@@ -183,15 +183,15 @@ function TransactionRow({
   const options = kind ? categories.filter((item) => item.kind === kind) : [];
 
   return (
-    <tr className="border-t border-slate-100 align-top">
-      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{format(parseISO(transaction.date), "MMM d, yyyy")}</td>
+    <tr className="border-t border-line align-top">
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-muted">{format(parseISO(transaction.date), "MMM d, yyyy")}</td>
       <td className="min-w-48 px-4 py-4">
-        <p className="font-medium text-slate-900">{transaction.description || "No description"}</p>
-        <p className="mt-1 text-xs capitalize text-slate-500">{transaction.source}</p>
+        <p className="font-medium text-foreground">{transaction.description || "No description"}</p>
+        <p className="mt-1 text-xs capitalize text-muted">{transaction.source}</p>
       </td>
-      <td className="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold tabular-nums text-slate-900">
+      <td className="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold tabular-nums text-foreground">
         <span className="inline-flex items-center justify-end gap-1.5">
-          {!zeroAmount && (transaction.amount.startsWith("-") ? <ArrowUpRight aria-hidden="true" className="size-4 text-rose-700" /> : <ArrowDownRight aria-hidden="true" className="size-4 text-emerald-700" />)}
+          {!zeroAmount && (transaction.amount.startsWith("-") ? <ArrowUpRight aria-hidden="true" className="size-4 text-negative" /> : <ArrowDownRight aria-hidden="true" className="size-4 text-positive" />)}
           {formatMoney(transaction.amount, currency)}
         </span>
       </td>
@@ -208,7 +208,7 @@ function TransactionRow({
             {transaction.category_id && !options.some((item) => item.id === transaction.category_id) && <option disabled value={transaction.category_id}>{category?.name ?? "Current category"}</option>}
             {options.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </Select>
-        ) : <span className="text-sm text-slate-700">{category?.name ?? "Uncategorized"}</span>}
+        ) : <span className="text-sm text-foreground-body">{category?.name ?? "Uncategorized"}</span>}
       </td>
       <td className="px-4 py-4"><Badge variant={statusVariant(transaction.categorization_status)}>{transaction.categorization_status.replaceAll("_", " ")}</Badge></td>
       {canWrite && <td className="whitespace-nowrap px-4 py-3 text-right">
@@ -217,7 +217,7 @@ function TransactionRow({
           <Button disabled={pending} onClick={onCancelDelete} size="sm" variant="quiet">Cancel</Button>
         </div> : <div className="flex justify-end gap-1">
           <Button aria-label={`Edit ${transaction.description ?? "transaction"}`} disabled={pending} onClick={onEdit} size="icon" title="Edit transaction" variant="quiet"><Pencil aria-hidden="true" className="size-4" /></Button>
-          <Button aria-label={`Delete ${transaction.description ?? "transaction"}`} disabled={pending} onClick={onDelete} size="icon" title="Delete transaction" variant="quiet"><Trash2 aria-hidden="true" className="size-4 text-rose-700" /></Button>
+          <Button aria-label={`Delete ${transaction.description ?? "transaction"}`} disabled={pending} onClick={onDelete} size="icon" title="Delete transaction" variant="quiet"><Trash2 aria-hidden="true" className="size-4 text-negative" /></Button>
         </div>}
       </td>}
     </tr>
@@ -289,9 +289,9 @@ export function TransactionsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-900">Ledger</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Transactions</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Browse and maintain this company’s cash movements. Inflows are positive and outflows are negative in the ledger.</p>
+          <p className="fp-eyebrow">Ledger</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Transactions</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Browse and maintain this company’s cash movements. Inflows are positive and outflows are negative in the ledger.</p>
         </div>
         {canWrite && <div className="flex flex-wrap gap-2">
           <Button onClick={() => setShowCsvImport((current) => !current)} variant="secondary">
@@ -314,30 +314,30 @@ export function TransactionsPage() {
       />}
 
       <Card className="overflow-hidden">
-        <CardHeader className="border-b border-slate-100">
+        <CardHeader className="border-b border-line">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><CardTitle>Company ledger</CardTitle><CardDescription className="mt-1">Filter and page through the server’s newest-first transaction list.</CardDescription></div>
             <Badge variant="neutral">{transactions.data ? `${transactions.data.total} records` : "Loading records"}</Badge>
           </div>
           <div className="grid gap-3 pt-3 sm:grid-cols-2 xl:grid-cols-4">
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">Search description<Input aria-label="Search description" onChange={(event) => resetPage(() => setSearch(event.currentTarget.value))} placeholder="Search transactions" value={search} /></label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">Direction<Select aria-label="Filter by direction" onChange={(event) => resetPage(() => setDirection(event.currentTarget.value as typeof direction))} value={direction}><option value="">All directions</option><option value="inflow">Inflows</option><option value="outflow">Outflows</option></Select></label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">Review status<Select aria-label="Filter by review status" onChange={(event) => resetPage(() => setStatus(event.currentTarget.value as typeof status))} value={status}><option value="">All statuses</option><option value="pending">Pending</option><option value="done">Done</option><option value="needs_review">Needs review</option><option value="failed">Failed</option></Select></label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">Source<Select aria-label="Filter by source" onChange={(event) => resetPage(() => setSource(event.currentTarget.value as typeof source))} value={source}><option value="">All sources</option><option value="manual">Manual</option><option value="upload">Imported</option></Select></label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">From<Input aria-label="Start date" onChange={(event) => resetPage(() => setStartDate(event.currentTarget.value))} type="date" value={startDate} /></label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">Through<Input aria-label="End date" onChange={(event) => resetPage(() => setEndDate(event.currentTarget.value))} type="date" value={endDate} /></label>
-            <label className="space-y-1.5 text-xs font-semibold text-slate-600">Category<Select aria-label="Filter by category" disabled={categories.isPending} onChange={(event) => resetPage(() => setCategoryId(event.currentTarget.value))} value={categoryId}><option value="">All categories</option>{categories.data?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</Select></label>
+            <label className="space-y-1.5 text-xs font-semibold text-muted">Search description<Input aria-label="Search description" onChange={(event) => resetPage(() => setSearch(event.currentTarget.value))} placeholder="Search transactions" value={search} /></label>
+            <label className="space-y-1.5 text-xs font-semibold text-muted">Direction<Select aria-label="Filter by direction" onChange={(event) => resetPage(() => setDirection(event.currentTarget.value as typeof direction))} value={direction}><option value="">All directions</option><option value="inflow">Inflows</option><option value="outflow">Outflows</option></Select></label>
+            <label className="space-y-1.5 text-xs font-semibold text-muted">Review status<Select aria-label="Filter by review status" onChange={(event) => resetPage(() => setStatus(event.currentTarget.value as typeof status))} value={status}><option value="">All statuses</option><option value="pending">Pending</option><option value="done">Done</option><option value="needs_review">Needs review</option><option value="failed">Failed</option></Select></label>
+            <label className="space-y-1.5 text-xs font-semibold text-muted">Source<Select aria-label="Filter by source" onChange={(event) => resetPage(() => setSource(event.currentTarget.value as typeof source))} value={source}><option value="">All sources</option><option value="manual">Manual</option><option value="upload">Imported</option></Select></label>
+            <label className="space-y-1.5 text-xs font-semibold text-muted">From<Input aria-label="Start date" onChange={(event) => resetPage(() => setStartDate(event.currentTarget.value))} type="date" value={startDate} /></label>
+            <label className="space-y-1.5 text-xs font-semibold text-muted">Through<Input aria-label="End date" onChange={(event) => resetPage(() => setEndDate(event.currentTarget.value))} type="date" value={endDate} /></label>
+            <label className="space-y-1.5 text-xs font-semibold text-muted">Category<Select aria-label="Filter by category" disabled={categories.isPending} onChange={(event) => resetPage(() => setCategoryId(event.currentTarget.value))} value={categoryId}><option value="">All categories</option>{categories.data?.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</Select></label>
             <div className="flex items-end"><Button onClick={() => { setSearch(""); setStartDate(""); setEndDate(""); setCategoryId(""); setStatus(""); setSource(""); setDirection(""); setOffset(0); }} size="sm" variant="secondary"><RotateCcw aria-hidden="true" className="size-3.5" />Clear filters</Button></div>
           </div>
         </CardHeader>
 
         {categories.isError && <div className="px-5 pt-4"><ErrorMessage>{errorText(categories.error, "Categories could not load; category controls are unavailable.")}</ErrorMessage></div>}
-        {transactions.isPending ? <LoadingState label="Loading transactions" /> : transactions.isError ? <div className="space-y-3 p-5"><ErrorMessage>{errorText(transactions.error, "Transactions could not load.")}</ErrorMessage><Button onClick={() => void transactions.refetch()} variant="secondary">Try again</Button></div> : transactions.data.items.length === 0 ? <div className="px-6 py-14 text-center"><h2 className="text-lg font-semibold text-slate-900">No transactions match these filters</h2><p className="mt-2 text-sm text-slate-600">Clear one or more filters, or record a transaction to start the ledger.</p>{canWrite && <Button className="mt-5" onClick={() => setEditorTransaction(null)}><CirclePlus aria-hidden="true" className="size-4" />Record a transaction</Button>}</div> : <>
+        {transactions.isPending ? <LoadingState label="Loading transactions" /> : transactions.isError ? <div className="space-y-3 p-5"><ErrorMessage>{errorText(transactions.error, "Transactions could not load.")}</ErrorMessage><Button onClick={() => void transactions.refetch()} variant="secondary">Try again</Button></div> : transactions.data.items.length === 0 ? <div className="px-6 py-14 text-center"><h2 className="text-lg font-semibold text-foreground">No transactions match these filters</h2><p className="mt-2 text-sm text-muted">Clear one or more filters, or record a transaction to start the ledger.</p>{canWrite && <Button className="mt-5" onClick={() => setEditorTransaction(null)}><CirclePlus aria-hidden="true" className="size-4" />Record a transaction</Button>}</div> : <>
           {deleteMutation.error && <div className="px-5 pt-4"><ErrorMessage>{errorText(deleteMutation.error, "The transaction could not be deleted.")}</ErrorMessage></div>}
           {updateMutation.error && !editing && <div className="px-5 pt-4"><ErrorMessage>{errorText(updateMutation.error, "The category could not be changed.")}</ErrorMessage></div>}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[920px] border-collapse text-left">
-              <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Description</th><th className="px-4 py-3 text-right">Amount</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Categorization</th>{canWrite && <th className="px-4 py-3 text-right">Actions</th>}</tr></thead>
+              <thead className="bg-surface-raised text-xs font-bold uppercase tracking-wide text-muted"><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Description</th><th className="px-4 py-3 text-right">Amount</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Categorization</th>{canWrite && <th className="px-4 py-3 text-right">Actions</th>}</tr></thead>
               <tbody>{transactions.data.items.map((transaction) => <TransactionRow
                 canWrite={canWrite}
                 categories={categories.data ?? []}
@@ -353,8 +353,8 @@ export function TransactionsPage() {
               />)}</tbody>
             </table>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
-            <p className="text-sm text-slate-600">Page {Math.floor(offset / PAGE_SIZE) + 1} · {transactions.data.total} matching transactions</p>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4">
+            <p className="text-sm text-muted">Page {Math.floor(offset / PAGE_SIZE) + 1} · {transactions.data.total} matching transactions</p>
             <div className="flex gap-2"><Button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} size="sm" variant="secondary">Previous</Button><Button disabled={!transactions.data.has_more} onClick={() => setOffset(offset + PAGE_SIZE)} size="sm" variant="secondary">Next</Button></div>
           </div>
         </>}

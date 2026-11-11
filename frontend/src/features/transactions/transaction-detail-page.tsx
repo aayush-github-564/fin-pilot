@@ -37,16 +37,16 @@ export function TransactionDetailPage() {
   return <div className="mx-auto max-w-3xl space-y-5">
     <Button asChild variant="secondary"><Link to={backToLedger}><ArrowLeft aria-hidden="true" className="size-4" />Back to transactions</Link></Button>
     <Card>
-      <CardHeader className="border-b border-slate-100">
+      <CardHeader className="border-b border-line">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-900"><FileText aria-hidden="true" className="size-5" /></span>
+            <span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/10 text-accent"><FileText aria-hidden="true" className="size-5" /></span>
             <div><CardDescription>Transaction</CardDescription><CardTitle className="mt-1">{item.description || "No description"}</CardTitle></div>
           </div>
           <Badge variant={statusVariant(item.categorization_status)}>{item.categorization_status.replaceAll("_", " ")}</Badge>
         </div>
-        <p className="mt-4 inline-flex items-center gap-2 text-xl font-semibold tabular-nums text-slate-950">
-          {item.amount.startsWith("-") ? <ArrowUpRight aria-hidden="true" className="size-5 text-rose-700" /> : <ArrowDownRight aria-hidden="true" className="size-5 text-emerald-700" />}
+        <p className="mt-4 inline-flex items-center gap-2 text-xl font-semibold tabular-nums text-foreground">
+          {item.amount.startsWith("-") ? <ArrowUpRight aria-hidden="true" className="size-5 text-negative" /> : <ArrowDownRight aria-hidden="true" className="size-5 text-positive" />}
           {formatMoney(item.amount, company.currency_code)}
         </p>
       </CardHeader>
@@ -61,5 +61,5 @@ export function TransactionDetailPage() {
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
-  return <div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 break-words text-sm font-semibold text-slate-900">{value}</dd></div>;
+  return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted">{label}</dt><dd className="mt-1 break-words text-sm font-semibold text-foreground">{value}</dd></div>;
 }

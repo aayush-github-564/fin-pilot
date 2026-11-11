@@ -24,30 +24,30 @@ function CompanyWorkspace({
   const { signOut } = useAuth();
   const { role } = useRole();
   const navigationClass = ({ isActive }: { isActive: boolean }) =>
-    `flex min-h-11 items-center gap-3 rounded-xl px-3.5 text-sm font-medium transition ${
+    `flex min-h-11 items-center gap-3 rounded-sm px-3.5 text-sm font-medium transition ${
       isActive
-        ? "bg-slate-950 text-white shadow-sm"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+        ? "bg-dark-surface text-dark-text shadow-sm"
+        : "text-dark-text-muted hover:bg-dark-surface hover:text-dark-text"
     }`;
 
   return (
-    <div className="min-h-screen bg-[#f5f7f8]">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-slate-200 bg-white px-4 py-5 lg:flex">
+    <div className="min-h-screen bg-background">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r border-dark-border bg-dark-bg px-4 py-5 text-dark-text lg:flex">
         <Link className="flex items-center gap-3 px-2" to={`/c/${company.company_id}/dashboard`}>
-          <span className="grid size-10 place-items-center rounded-xl bg-slate-950 text-cyan-300">
+          <span className="grid size-10 place-items-center rounded-sm bg-dark-surface text-dark-accent">
             <Building2 aria-hidden="true" className="size-5" />
           </span>
           <span>
-            <span className="block text-base font-bold tracking-tight text-slate-950">FinPilot</span>
-            <span className="block text-[11px] text-slate-500">Finance operations</span>
+            <span className="block text-base font-bold tracking-tight text-dark-text">FinPilot</span>
+            <span className="block text-xs text-dark-text-muted">Finance operations</span>
           </span>
         </Link>
 
         <div className="mt-9 px-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+          <p className="fp-label fp-label--dark-muted">
             Workspace
           </p>
-          <p className="mt-2 truncate text-sm font-semibold text-slate-800" title={company.name}>
+          <p className="mt-2 truncate text-sm font-semibold text-dark-text" title={company.name}>
             {company.name}
           </p>
         </div>
@@ -95,27 +95,27 @@ function CompanyWorkspace({
           </NavLink>
         </nav>
 
-        <div className="mt-auto rounded-2xl bg-slate-50 p-4">
-          <p className="text-xs font-semibold text-slate-800">Your access</p>
+        <div className="mt-auto rounded-lg bg-dark-surface p-4">
+          <p className="text-xs font-semibold text-dark-text">Your access</p>
           <div className="mt-2 flex items-center justify-between gap-2">
-            <Badge variant={role === "viewer" ? "neutral" : "info"}>{role}</Badge>
-            <span className="text-[11px] text-slate-500">Company scoped</span>
+            <Badge className="border border-dark-border bg-dark-bg text-dark-accent" variant={role === "viewer" ? "neutral" : "info"}>{role}</Badge>
+            <span className="text-xs text-dark-text-muted">Company scoped</span>
           </div>
         </div>
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur sm:px-7 lg:px-9">
+        <header className="sticky top-0 z-10 border-b border-border/80 bg-surface/90 px-4 py-3 backdrop-blur sm:px-7 lg:px-9">
           <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3 lg:max-w-xl">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-slate-950 text-cyan-300 lg:hidden">
+              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-dark-bg text-dark-accent lg:hidden">
                 <Building2 aria-hidden="true" className="size-4" />
               </span>
               <label className="sr-only" htmlFor="company-switcher">
                 Switch company
               </label>
               <Select
-                className="min-w-0 max-w-full border-transparent bg-slate-50 font-semibold shadow-none sm:max-w-sm"
+                className="min-w-0 max-w-full border-transparent bg-surface-raised font-semibold shadow-none sm:max-w-sm"
                 id="company-switcher"
                 onChange={(event) =>
                   navigate(`/c/${event.currentTarget.value}/dashboard`)
@@ -131,7 +131,7 @@ function CompanyWorkspace({
               <Badge className="lg:hidden" variant={role === "viewer" ? "neutral" : "info"}>
                 {role}
               </Badge>
-              <span className="hidden max-w-48 truncate text-sm text-slate-600 sm:block">{email}</span>
+              <span className="hidden max-w-48 truncate text-sm text-muted sm:block">{email}</span>
               <Button
                 aria-label="Sign out"
                 onClick={signOut}

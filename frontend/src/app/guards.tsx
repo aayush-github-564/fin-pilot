@@ -28,10 +28,10 @@ export function HomeRedirect() {
   if (companies.isError) {
     return (
       <main className="mx-auto max-w-xl px-5 py-16 text-center">
-        <h1 className="text-xl font-semibold text-slate-950">Your companies could not load</h1>
-        <p className="mt-2 text-sm text-slate-600">Check your connection and try again.</p>
+        <h1 className="text-xl font-semibold text-foreground">Your companies could not load</h1>
+        <p className="mt-2 text-sm text-muted">Check your connection and try again.</p>
         <button
-          className="mt-5 text-sm font-semibold text-cyan-800 underline underline-offset-4"
+          className="mt-5 text-sm font-semibold text-accent underline underline-offset-4"
           onClick={() => void companies.refetch()}
           type="button"
         >

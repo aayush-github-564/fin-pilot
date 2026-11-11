@@ -88,7 +88,7 @@ function FactsBreakdown({ type, facts, currency }: {
       <Metric label="Inflows" value={formatMoney(parsed.data.inflows, currency)} />
       <Metric label="Outflows" value={formatMoney(parsed.data.outflows, currency)} />
       <Metric label="Net cash flow" value={formatMoney(parsed.data.net_cash_flow, currency)} />
-      <p className="text-xs text-slate-500 sm:col-span-3">Based on {parsed.data.transaction_count} transactions.</p>
+      <p className="text-xs text-muted sm:col-span-3">Based on {parsed.data.transaction_count} transactions.</p>
     </div>;
   }
 
@@ -96,14 +96,14 @@ function FactsBreakdown({ type, facts, currency }: {
     const parsed = expensesByCategoryFactsSchema.safeParse(facts);
     if (!parsed.success) return null;
     return <div className="mt-4 space-y-2">
-      {parsed.data.items.length === 0 ? <p className="text-sm text-slate-600">No categorized expenses were found in this period.</p> :
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+      {parsed.data.items.length === 0 ? <p className="text-sm text-muted">No categorized expenses were found in this period.</p> :
+        <div className="overflow-x-auto rounded-sm border border-border">
           <table className="w-full min-w-[420px] text-left text-sm">
-            <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wide text-slate-500"><tr><th className="px-3 py-2">Category</th><th className="px-3 py-2 text-right">Amount</th><th className="px-3 py-2 text-right">Transactions</th></tr></thead>
-            <tbody>{parsed.data.items.map((item) => <tr className="border-t border-slate-100" key={item.category_id}><td className="px-3 py-2">{item.category_name}</td><td className="px-3 py-2 text-right tabular-nums">{formatMoney(item.amount, currency)}</td><td className="px-3 py-2 text-right tabular-nums">{item.transaction_count}</td></tr>)}</tbody>
+            <thead className="bg-surface-raised text-xs font-bold uppercase tracking-wide text-muted"><tr><th className="px-3 py-2">Category</th><th className="px-3 py-2 text-right">Amount</th><th className="px-3 py-2 text-right">Transactions</th></tr></thead>
+            <tbody>{parsed.data.items.map((item) => <tr className="border-t border-line" key={item.category_id}><td className="px-3 py-2">{item.category_name}</td><td className="px-3 py-2 text-right tabular-nums">{formatMoney(item.amount, currency)}</td><td className="px-3 py-2 text-right tabular-nums">{item.transaction_count}</td></tr>)}</tbody>
           </table>
         </div>}
-      {parsed.data.has_more && <p className="text-xs text-slate-500">{topCountLabel("categories", parsed.data.items.length)}</p>}
+      {parsed.data.has_more && <p className="text-xs text-muted">{topCountLabel("categories", parsed.data.items.length)}</p>}
     </div>;
   }
 
@@ -111,14 +111,14 @@ function FactsBreakdown({ type, facts, currency }: {
     const parsed = largestExpensesFactsSchema.safeParse(facts);
     if (!parsed.success) return null;
     return <div className="mt-4 space-y-2">
-      {parsed.data.items.length === 0 ? <p className="text-sm text-slate-600">No expenses were found in this period.</p> :
-        <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+      {parsed.data.items.length === 0 ? <p className="text-sm text-muted">No expenses were found in this period.</p> :
+        <ul className="divide-y divide-line rounded-md border border-border">
           {parsed.data.items.map((item, index) => <li className="flex flex-wrap items-center justify-between gap-3 px-3 py-3" key={`${item.date}-${index}`}>
-            <div className="min-w-0"><p className="truncate text-sm font-medium text-slate-800">{item.description || "Expense"}</p><p className="mt-1 text-xs text-slate-500">{formatDate(item.date)}{item.category_name ? ` · ${item.category_name}` : ""}</p></div>
-            <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">{formatMoney(item.amount, currency)}</span>
+            <div className="min-w-0"><p className="truncate text-sm font-medium text-foreground-body">{item.description || "Expense"}</p><p className="mt-1 text-xs text-muted">{formatDate(item.date)}{item.category_name ? ` · ${item.category_name}` : ""}</p></div>
+            <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">{formatMoney(item.amount, currency)}</span>
           </li>)}
         </ul>}
-      {parsed.data.has_more && <p className="text-xs text-slate-500">{topCountLabel("expenses", parsed.data.items.length)}</p>}
+      {parsed.data.has_more && <p className="text-xs text-muted">{topCountLabel("expenses", parsed.data.items.length)}</p>}
     </div>;
   }
 
@@ -131,13 +131,13 @@ function FactsBreakdown({ type, facts, currency }: {
         <Metric label="Actual" value={formatMoney(parsed.data.total_actual, currency)} />
         <Metric label="Remaining" value={formatMoney(parsed.data.total_remaining, currency)} />
       </div>
-      {parsed.data.items.length > 0 && <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+      {parsed.data.items.length > 0 && <ul className="divide-y divide-line rounded-md border border-border">
         {parsed.data.items.map((item) => <li className="flex flex-wrap items-center justify-between gap-3 px-3 py-3" key={`${item.category_kind}-${item.category_name}`}>
-          <div><p className="text-sm font-medium text-slate-800">{item.category_name}</p><p className="mt-1 text-xs text-slate-500">{item.category_kind} · {item.transaction_count} transactions{item.over_budget ? " · Over budget" : ""}</p></div>
-          <div className="text-right text-xs text-slate-600"><p>Budget {formatMoney(item.budgeted_amount, currency)}</p><p>Actual {formatMoney(item.actual_amount, currency)}</p></div>
+          <div><p className="text-sm font-medium text-foreground-body">{item.category_name}</p><p className="mt-1 text-xs text-muted">{item.category_kind} · {item.transaction_count} transactions{item.over_budget ? " · Over budget" : ""}</p></div>
+          <div className="text-right text-xs text-muted"><p>Budget {formatMoney(item.budgeted_amount, currency)}</p><p>Actual {formatMoney(item.actual_amount, currency)}</p></div>
         </li>)}
       </ul>}
-      {parsed.data.has_more && <p className="text-xs text-slate-500">{topCountLabel("budget categories", parsed.data.items.length)}</p>}
+      {parsed.data.has_more && <p className="text-xs text-muted">{topCountLabel("budget categories", parsed.data.items.length)}</p>}
     </div>;
   }
 
@@ -145,9 +145,9 @@ function FactsBreakdown({ type, facts, currency }: {
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl bg-white px-3 py-3">
-    <p className="text-xs font-medium text-slate-500">{label}</p>
-    <p className="mt-1 text-base font-semibold tabular-nums text-slate-950">{value}</p>
+  return <div className="rounded-md bg-surface px-3 py-3">
+    <p className="text-xs font-medium text-muted">{label}</p>
+    <p className="mt-1 text-base font-semibold tabular-nums text-foreground">{value}</p>
   </div>;
 }
 
@@ -191,50 +191,50 @@ function CompanyChat({ companyId, currency }: { companyId: string; currency: str
 
   return <div className="mx-auto max-w-4xl space-y-6">
     <div>
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-900">FinPilot assistant · {role}</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Ask about your finances</h1>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Ask about cash flow, expenses by category, largest expenses, or this and last month's budgets.</p>
+      <p className="fp-eyebrow">FinPilot assistant · {role}</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">Ask about your finances</h1>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Ask about cash flow, expenses by category, largest expenses, or this and last month's budgets.</p>
     </div>
 
     <Card className="overflow-hidden">
-      <CardHeader className="border-b border-slate-100">
+      <CardHeader className="border-b border-line">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-cyan-50 text-cyan-900"><MessageCircle aria-hidden="true" className="size-5" /></span>
+          <span className="grid size-10 shrink-0 place-items-center rounded-md bg-signal-deep/10 text-accent"><MessageCircle aria-hidden="true" className="size-5" /></span>
           <div><CardTitle>Company finance Q&amp;A</CardTitle><CardDescription className="mt-1">Messages stay only on this page and are cleared when you leave. There is no saved chat history.</CardDescription></div>
         </div>
-        <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600" role="note">
+        <div className="mt-4 rounded-md bg-surface-raised p-3 text-xs leading-5 text-muted" role="note">
           FinPilot computes financial figures from company data. AI only selects which supported query to run; it does not calculate the figures.
         </div>
       </CardHeader>
 
       <div className="space-y-4 p-4 sm:p-5">
-        {messages.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 px-5 py-8 text-center">
-          <Bot aria-hidden="true" className="mx-auto size-7 text-cyan-800" />
-          <p className="mt-3 text-sm font-semibold text-slate-800">Ask a question about this company's financial data</p>
-          <p className="mt-1 text-xs text-slate-500">Pick an example or type your own question.</p>
+        {messages.length === 0 ? <div className="rounded-lg border border-dashed border-border px-5 py-8 text-center">
+          <Bot aria-hidden="true" className="mx-auto size-7 text-accent" />
+          <p className="mt-3 text-sm font-semibold text-foreground-body">Ask a question about this company's financial data</p>
+          <p className="mt-1 text-xs text-muted">Pick an example or type your own question.</p>
         </div> : <div aria-label="Conversation" className="space-y-4" role="log">
           {messages.map(({ question: asked, response }) => <article className="space-y-3" key={response.query_id}>
-            <div className="ml-auto flex max-w-[90%] items-start gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm leading-6 text-white sm:max-w-[80%]">
-              <UserRound aria-hidden="true" className="mt-1 size-4 shrink-0 text-cyan-200" /><p>{asked}</p>
+            <div className="ml-auto flex max-w-[90%] items-start gap-2 rounded-lg bg-dark-bg px-4 py-3 text-sm leading-6 text-dark-text sm:max-w-[80%]">
+              <UserRound aria-hidden="true" className="mt-1 size-4 shrink-0 text-dark-accent" /><p>{asked}</p>
             </div>
-            <Card className="mr-auto max-w-full bg-slate-50 p-4 sm:max-w-[92%]">
+            <Card className="mr-auto max-w-full bg-surface-raised p-4 sm:max-w-[92%]">
               <div className="flex flex-wrap items-center gap-2">
-                <Bot aria-hidden="true" className="size-4 text-cyan-900" />
-                <span className="text-xs font-bold text-slate-800">FinPilot</span>
+                <Bot aria-hidden="true" className="size-4 text-accent" />
+                <span className="text-xs font-bold text-foreground-body">FinPilot</span>
                 <Badge variant={response.supported ? "success" : "neutral"}>{response.supported ? "Company data" : "Unsupported question"}</Badge>
               </div>
-              <p className="mt-3 text-sm leading-6 text-slate-800">{response.answer}</p>
+              <p className="mt-3 text-sm leading-6 text-foreground-body">{response.answer}</p>
               {response.supported && <>
-                {provenance(response) && <p className="mt-3 text-xs text-slate-500">Period: {provenance(response)}</p>}
+                {provenance(response) && <p className="mt-3 text-xs text-muted">Period: {provenance(response)}</p>}
                 <FactsBreakdown currency={currency} facts={response.facts} type={response.query_type} />
-                {!hasValidFacts(response.query_type, response.facts) && <p className="mt-3 text-xs text-slate-500">The text answer is available; a structured breakdown could not be shown for this response.</p>}
-                <p className="mt-3 border-t border-slate-200 pt-3 text-xs leading-5 text-slate-500">Figures are computed from this company's data. AI selected the query and did not calculate these values.</p>
+                {!hasValidFacts(response.query_type, response.facts) && <p className="mt-3 text-xs text-muted">The text answer is available; a structured breakdown could not be shown for this response.</p>}
+                <p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted">Figures are computed from this company's data. AI selected the query and did not calculate these values.</p>
               </>}
             </Card>
           </article>)}
         </div>}
 
-        {mutation.isPending && <div className="mr-auto max-w-[92%] rounded-2xl bg-slate-50 px-4 py-3"><LoadingState label="Checking company data" /></div>}
+        {mutation.isPending && <div className="mr-auto max-w-[92%] rounded-lg bg-surface-raised px-4 py-3"><LoadingState label="Checking company data" /></div>}
         {mutation.error && <ErrorMessage>{errorText(mutation.error, rateLimitSeconds)}</ErrorMessage>}
 
         <div className="flex flex-wrap gap-2" aria-label="Suggested questions" role="group">
@@ -262,7 +262,7 @@ function CompanyChat({ companyId, currency }: { companyId: string; currency: str
             <ArrowUp aria-hidden="true" className="size-4" />Ask
           </Button>
         </form>
-        <p className="text-right text-xs text-slate-500">{question.length}/1000</p>
+        <p className="text-right text-xs text-muted">{question.length}/1000</p>
       </div>
     </Card>
   </div>;

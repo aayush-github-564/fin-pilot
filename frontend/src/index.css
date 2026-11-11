@@ -31,6 +31,13 @@
   --color-negative: var(--fp-negative);
   --color-caution: var(--fp-caution);
 
+  --color-dark-bg: var(--fp-dark-bg);
+  --color-dark-surface: var(--fp-dark-surface);
+  --color-dark-border: var(--fp-dark-border);
+  --color-dark-text: var(--fp-dark-text);
+  --color-dark-text-muted: var(--fp-dark-text-muted);
+  --color-dark-accent: var(--fp-dark-accent);
+
   --font-sans: var(--fp-font-ui);
   --font-display: var(--fp-font-display);
   --font-mono: var(--fp-font-mono);
@@ -40,6 +47,7 @@
   --radius-lg: var(--fp-radius-lg);
   --radius-xl: var(--fp-radius-xl);
   --radius-pill: var(--fp-radius-pill);
+  --radius-full: var(--fp-radius-pill);
 }
 
 :root {
@@ -72,4 +80,12 @@ select {
 ::selection {
   background: var(--fp-linen);
   color: var(--fp-text);
+}
+
+.fp-label--dark-muted {
+  color: var(--fp-dark-text-muted);
+}
+
+.fp-label--dark-accent {
+  color: var(--fp-dark-accent);
 }
