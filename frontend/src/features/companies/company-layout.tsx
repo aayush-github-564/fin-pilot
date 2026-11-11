@@ -35,7 +35,7 @@ function CompanyWorkspace({
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-58 flex-col border-r border-dark-border bg-dark-bg px-4 py-5 text-dark-text lg:flex">
         <Link className="flex items-center px-2 text-dark-text" to={`/c/${company.company_id}/dashboard`}>
-          <BrandLockup wordmarkClassName="text-lg" />
+          <BrandLockup dark wordmarkClassName="text-lg" />
         </Link>
 
         <div className="mt-9 px-2">
