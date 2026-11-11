@@ -49,11 +49,14 @@ function isProcessing(status: string) {
   return status === "pending" || status === "processing";
 }
 
-function MissingField({ label, value, isFigure = false }: { label: string; value: string | null | undefined; isFigure?: boolean }) {
+function MissingField({ label, value, isFigure = false, confirmed = false }: { label: string; value: string | null | undefined; isFigure?: boolean; confirmed?: boolean }) {
   const missing = value === null || value === undefined || value.trim() === "";
   return <div className="space-y-1">
     <dt className="flex items-center gap-2 text-xs font-medium text-muted">{label}{missing && <Badge variant="caution">Needs review</Badge>}</dt>
-    <dd className={`${isFigure ? "fp-figure" : ""} break-words text-sm font-semibold ${missing ? "text-pine" : "text-foreground"}`}>{value || "Not extracted"}</dd>
+    <dd className={`${isFigure ? "fp-figure" : ""} break-words text-sm font-semibold ${missing ? "text-pine" : confirmed ? "text-foreground" : "text-foreground-body"}`}>
+      {isFigure && confirmed && <span aria-label="Confirmed by review" className="fp-dot mr-2 align-middle" role="img" />}
+      {value || "Not extracted"}
+    </dd>
   </div>;
 }
 
@@ -169,7 +172,10 @@ function InvoiceCard({ invoice, companyId, currency, canWrite }: {
           <CardTitle className="mt-3 break-words">{invoice.vendor?.trim() || "Vendor or customer not extracted"}</CardTitle>
           <CardDescription className="mt-1">Invoice date: {formatDate(invoice.date)}{invoice.confirmed_at ? ` · Reviewed ${formatDate(invoice.confirmed_at.slice(0, 10))}` : ""}</CardDescription>
         </div>
-        <p className="fp-figure shrink-0 text-lg font-semibold text-foreground">{invoice.amount === null || invoice.amount === undefined ? "Amount not extracted" : formatMoney(invoice.amount, currency)}</p>
+        <p className={`fp-figure inline-flex shrink-0 items-center gap-2 text-lg font-semibold ${invoice.confirmed_at ? "text-foreground" : "text-foreground-body"}`}>
+          {invoice.confirmed_at && <span aria-label="Confirmed by review" className="fp-dot" role="img" />}
+          {invoice.amount === null || invoice.amount === undefined ? "Amount not extracted" : formatMoney(invoice.amount, currency)}
+        </p>
       </div>
     </CardHeader>
 
@@ -181,7 +187,7 @@ function InvoiceCard({ invoice, companyId, currency, canWrite }: {
         <MissingField label="Vendor or customer" value={invoice.vendor} />
         <MissingField label="Direction" value={invoice.direction === "purchase" ? "Purchase" : invoice.direction === "sale" ? "Sale" : null} />
         <MissingField label="Invoice date" value={invoice.date ? formatDate(invoice.date) : null} />
-        <MissingField isFigure label="Invoice total" value={invoice.amount === null || invoice.amount === undefined ? null : formatMoney(invoice.amount, currency)} />
+        <MissingField confirmed={Boolean(invoice.confirmed_at)} isFigure label="Invoice total" value={invoice.amount === null || invoice.amount === undefined ? null : formatMoney(invoice.amount, currency)} />
       </dl>
 
       {editing && <InvoiceEditForm
