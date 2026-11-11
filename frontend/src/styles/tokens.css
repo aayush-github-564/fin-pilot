@@ -1,0 +1,124 @@
+/* FinPilot brand tokens v1.0
+   Import once at the app root. Components should use the semantic --fp-* roles,
+   never raw hex values. */
+
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  /* Palette */
+  --fp-pine: #0B1F1A;
+  --fp-fir: #12332B;
+  --fp-moss: #1D4A3D;
+  --fp-paper: #F6F3EC;
+  --fp-linen: #ECE7DB;
+  --fp-mist: #9DB3AA;
+  --fp-stone: #55645E;
+  --fp-signal: #5BE3BE;       /* on dark only */
+  --fp-signal-deep: #0A7A5E;  /* on light */
+  --fp-clay: #BE3C27;         /* negative */
+  --fp-ochre: #E0A83A;        /* caution: use as a FILL with pine text, never as text on light */
+
+  /* Supporting neutrals used in the boards */
+  --fp-card: #FBF9F4;
+  --fp-card-line: #E4DED0;
+  --fp-line: #D9D3C4;
+  --fp-input-line: #CFC8B6;
+  --fp-body: #2A3B36;
+
+  /* Semantic roles: light (default) */
+  --fp-bg: var(--fp-paper);
+  --fp-surface: var(--fp-card);
+  --fp-surface-raised: var(--fp-linen);
+  --fp-border: var(--fp-card-line);
+  --fp-border-strong: var(--fp-line);
+  --fp-text: var(--fp-pine);
+  --fp-text-body: var(--fp-body);
+  --fp-text-muted: var(--fp-stone);
+  --fp-accent: var(--fp-signal-deep);
+  --fp-positive: var(--fp-signal-deep);
+  --fp-negative: var(--fp-clay);
+  --fp-caution: var(--fp-ochre);
+
+  /* Semantic roles: dark surfaces (sidebar, code blocks) */
+  --fp-dark-bg: var(--fp-pine);
+  --fp-dark-surface: var(--fp-fir);
+  --fp-dark-border: var(--fp-moss);
+  --fp-dark-text: var(--fp-paper);
+  --fp-dark-text-muted: var(--fp-mist);
+  --fp-dark-accent: var(--fp-signal);
+
+  /* Type */
+  --fp-font-display: "Instrument Serif", Georgia, serif;
+  --fp-font-ui: "Manrope", system-ui, sans-serif;
+  --fp-font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radii */
+  --fp-radius-sm: 10px;
+  --fp-radius-md: 12px;
+  --fp-radius-lg: 16px;
+  --fp-radius-xl: 20px;
+  --fp-radius-pill: 999px;
+}
+
+html, body {
+  background: var(--fp-bg);
+  color: var(--fp-text);
+  font-family: var(--fp-font-ui);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* Display: headlines and hero figures. Use one italic word per headline. */
+.fp-display {
+  font-family: var(--fp-font-display);
+  font-weight: 400;
+  line-height: 1.04;
+}
+.fp-display em { font-style: italic; color: var(--fp-accent); }
+
+/* Small uppercase label above a value */
+.fp-label {
+  font-family: var(--fp-font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fp-text-muted);
+}
+
+/* Mono eyebrow for section tags and metadata */
+.fp-eyebrow {
+  font-family: var(--fp-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fp-text-muted);
+}
+
+/* Every financial value: tabular, right-aligned. Use a true minus (U+2212). */
+.fp-figure {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.fp-figure--negative { color: var(--fp-negative); }
+
+.fp-mono { font-family: var(--fp-font-mono); }
+
+/* Wordmark: pair with the mark SVG. Mark height ~0.94 x font-size, gap ~0.275em. */
+.fp-wordmark {
+  font-family: var(--fp-font-ui);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+/* The signal dot: marks a value the user has confirmed. */
+.fp-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fp-accent);
+}
+.fp-dark .fp-dot { background: var(--fp-dark-accent); }

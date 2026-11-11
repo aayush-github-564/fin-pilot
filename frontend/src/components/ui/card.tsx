@@ -8,7 +8,7 @@ export function Card({
 }: ComponentProps<"section">) {
   return (
     <section
-      className={cn("rounded-2xl border border-slate-200 bg-white shadow-sm", className)}
+      className={cn("rounded-lg border border-card-line bg-card", className)}
       {...props}
     />
   );
@@ -27,7 +27,7 @@ export function CardTitle({
 }: ComponentProps<"h2">) {
   return (
     <h2
-      className={cn("text-base font-semibold tracking-tight text-slate-950", className)}
+      className={cn("fp-card-title", className)}
       {...props}
     />
   );
@@ -37,7 +37,7 @@ export function CardDescription({
   className,
   ...props
 }: ComponentProps<"p">) {
-  return <p className={cn("text-sm leading-6 text-slate-600", className)} {...props} />;
+  return <p className={cn("text-sm leading-6 text-muted", className)} {...props} />;
 }
 
 export function CardContent({

@@ -59,3 +59,15 @@ Report:
 - Suggested next step
 
 Update engineering documentation only when meaningful new information is established.
+
+## 9. Brand and UI styling
+
+All UI follows the FinPilot brand identity. Read `brand/BRAND.md` before changing any UI.
+
+- Use the `--fp-*` tokens from `brand/tokens.css`. Never hardcode hex values in components.
+- Fonts: Instrument Serif (headlines and hero figures only), Manrope (interface), JetBrains Mono (IDs, SQL, data labels).
+- Signal color is for the dot, active states and chart endpoints only (about 8% of a screen).
+- Financial figures are tabular-nums, right-aligned, with a true minus (−) for negatives.
+- Import logo files from `brand/assets/`. Never redraw or retype the logo.
+- No gradients, decorative shadows or emoji. Text must pass AA contrast.
+- `brand/*.html` boards are the visual source of truth. If they conflict with BRAND.md, follow the boards and flag it.

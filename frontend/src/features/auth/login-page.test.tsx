@@ -51,8 +51,8 @@ describe("account access", () => {
     );
 
     renderAt("/register");
-    await user.type(screen.getByLabelText("Email address"), registeredUser.email);
-    await user.type(screen.getByLabelText("Password"), "correct horse battery staple");
+    await user.type(await screen.findByLabelText("Email address"), registeredUser.email);
+    await user.type(await screen.findByLabelText("Password"), "correct horse battery staple");
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(await screen.findByText("Your company workspace starts here")).toBeInTheDocument();
@@ -79,9 +79,9 @@ describe("account access", () => {
     );
 
     renderAt("/login");
-    const email = screen.getByLabelText("Email address");
+    const email = await screen.findByLabelText("Email address");
     await user.type(email, "owner@example.com");
-    await user.type(screen.getByLabelText("Password"), "wrong-password");
+    await user.type(await screen.findByLabelText("Password"), "wrong-password");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect email or password");

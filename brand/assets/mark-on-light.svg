@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 8 39 48" role="img" aria-label="FinPilot">
+  <rect x="12" y="8" width="12" height="48" fill="#0B1F1A"/>
+  <path d="M24 14 H34 A11 11 0 0 1 45 25" fill="none" stroke="#0B1F1A" stroke-width="12"/>
+  <rect x="24" y="30" width="10" height="12" fill="#0B1F1A"/>
+  <circle cx="45" cy="36" r="6" fill="#0A7A5E"/>
+</svg>

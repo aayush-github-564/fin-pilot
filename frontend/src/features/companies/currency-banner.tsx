@@ -50,17 +50,17 @@ export function CurrencyBanner() {
   if (company.currency_code) return null;
 
   return (
-    <Card className="mb-7 overflow-hidden border-amber-200 bg-amber-50/80">
+    <Card className="mb-7 overflow-hidden border-caution/40 bg-caution/20">
       <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.7fr)] lg:items-center">
         <div className="flex items-start gap-3.5">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-900">
+          <span className="grid size-10 shrink-0 place-items-center rounded-md bg-caution/20 text-pine">
             <CircleDollarSign aria-hidden="true" className="size-5" />
           </span>
           <div>
-            <h2 className="text-sm font-semibold text-slate-950">
+            <h2 className="text-sm font-semibold text-foreground">
               Set your company accounting currency
             </h2>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-slate-700">
+            <p className="mt-1 max-w-xl text-sm leading-6 text-foreground-body">
               FinPilot displays amounts in this currency and does not convert between
               currencies. An owner must set it before this workspace records financial activity.
             </p>
@@ -86,7 +86,7 @@ export function CurrencyBanner() {
                 {...form.register("currency_code")}
               />
               {form.formState.errors.currency_code && (
-                <p className="mt-1.5 text-xs text-rose-800" role="alert">
+                <p className="mt-1.5 text-xs text-negative" role="alert">
                   {form.formState.errors.currency_code.message}
                 </p>
               )}
@@ -108,7 +108,7 @@ export function CurrencyBanner() {
             )}
           </form>
         ) : (
-          <p className="rounded-xl border border-amber-200 bg-white/70 px-4 py-3 text-sm text-slate-700">
+          <p className="rounded-md border border-caution/40 bg-surface/70 px-4 py-3 text-sm text-foreground-body">
             Ask an owner to choose the accounting currency for this company.
           </p>
         )}

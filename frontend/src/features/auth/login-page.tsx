@@ -57,7 +57,7 @@ export function LoginPage() {
         <span>
           New to FinPilot?{" "}
           <Link
-            className="font-semibold text-cyan-900 underline decoration-cyan-300 underline-offset-4 hover:text-cyan-700"
+            className="font-semibold text-accent underline decoration-accent underline-offset-4 hover:text-accent"
             to={`/register${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`}
           >
             Create an account
@@ -73,7 +73,7 @@ export function LoginPage() {
         {signInMutation.isError && <ErrorMessage>{messageFor(signInMutation.error)}</ErrorMessage>}
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800" htmlFor="login-email">
+          <label className="text-sm font-medium text-foreground-body" htmlFor="login-email">
             Email address
           </label>
           <Input
@@ -85,7 +85,7 @@ export function LoginPage() {
             {...form.register("email")}
           />
           {form.formState.errors.email && (
-            <p className="text-sm text-rose-700" role="alert">
+            <p className="text-sm text-negative" role="alert">
               {form.formState.errors.email.message}
             </p>
           )}
@@ -93,10 +93,10 @@ export function LoginPage() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <label className="text-sm font-medium text-slate-800" htmlFor="login-password">
+            <label className="text-sm font-medium text-foreground-body" htmlFor="login-password">
               Password
             </label>
-            <span className="text-xs text-slate-500">Access tokens expire after 30 minutes</span>
+            <span className="text-xs text-muted">Access tokens expire after 30 minutes</span>
           </div>
           <Input
             autoComplete="current-password"
@@ -106,7 +106,7 @@ export function LoginPage() {
             {...form.register("password")}
           />
           {form.formState.errors.password && (
-            <p className="text-sm text-rose-700" role="alert">
+            <p className="text-sm text-negative" role="alert">
               {form.formState.errors.password.message}
             </p>
           )}

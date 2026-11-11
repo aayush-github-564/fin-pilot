@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { ApiError } from "../../api/errors";
 import { useAuth } from "../../app/auth-context";
+import { BrandLockup } from "../../components/brand/brand-lockup";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
@@ -84,20 +85,17 @@ export function CompanyPickerPage() {
   }).format(new Date(user.data.created_at));
 
   return (
-    <main className="min-h-screen bg-[#f5f7f8]">
-      <header className="border-b border-slate-200 bg-white">
+    <main className="min-h-screen bg-background">
+      <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-xl bg-slate-950 text-cyan-300">
-              <Building2 aria-hidden="true" className="size-5" />
-            </span>
+            <BrandLockup className="text-pine" wordmarkClassName="text-base" />
             <div>
-              <p className="font-bold tracking-tight text-slate-950">FinPilot</p>
-              <p className="text-xs text-slate-500">Choose your workspace</p>
+              <p className="text-xs text-muted">Choose your workspace</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden max-w-64 truncate text-sm text-slate-600 sm:block">
+            <span className="hidden max-w-64 truncate text-sm text-muted sm:block">
               {user.data.email}
             </span>
             <Button onClick={signOut} size="sm" variant="quiet">
@@ -109,15 +107,15 @@ export function CompanyPickerPage() {
 
       <div className="mx-auto grid max-w-7xl gap-8 px-5 py-9 sm:px-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:gap-10 lg:py-14">
         <section>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-800">
+          <p className="fp-eyebrow">
             Company access
           </p>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                Your workspaces
+              <h1 className="fp-page-title">
+                Your <em>workspaces</em>
               </h1>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="mt-2 text-sm leading-6 text-muted">
                 Choose a company to continue. Each workspace keeps its records and access in
                 their own company context.
               </p>
@@ -132,14 +130,14 @@ export function CompanyPickerPage() {
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
               {companies.data.map((company) => (
                 <Link
-                  className="group block h-full rounded-2xl text-left outline-none focus-visible:ring-4 focus-visible:ring-cyan-200"
+                  className="group block h-full rounded-lg text-left outline-none focus-visible:ring-4 focus-visible:ring-accent/20"
                   key={company.company_id}
                   to={companyPath(company)}
                 >
-                  <Card className="h-full transition group-hover:-translate-y-0.5 group-hover:border-cyan-300 group-hover:shadow-md">
+                  <Card className="h-full transition-colors group-hover:border-accent/40">
                     <CardHeader>
                       <div className="flex items-start justify-between gap-3">
-                        <span className="grid size-10 place-items-center rounded-xl bg-cyan-50 text-cyan-900">
+                        <span className="grid size-10 place-items-center rounded-md bg-signal-deep/5 text-accent">
                           <Building2 aria-hidden="true" className="size-5" />
                         </span>
                         <Badge variant={company.role === "viewer" ? "neutral" : "info"}>
@@ -152,7 +150,7 @@ export function CompanyPickerPage() {
                           ? `Accounting currency · ${company.currency_code}`
                           : "Accounting currency not set"}
                       </CardDescription>
-                      <span className="inline-flex items-center gap-1 pt-3 text-sm font-semibold text-cyan-900">
+                      <span className="inline-flex items-center gap-1 pt-3 text-sm font-semibold text-accent">
                         Open workspace
                         <ArrowRight
                           aria-hidden="true"
@@ -165,14 +163,14 @@ export function CompanyPickerPage() {
               ))}
             </div>
           ) : (
-            <Card className="mt-7 border-dashed bg-white/70 p-7 text-center sm:p-10">
-              <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-cyan-50 text-cyan-900">
+            <Card className="mt-7 border-dashed bg-card p-7 text-center sm:p-10">
+              <span className="mx-auto grid size-12 place-items-center rounded-lg bg-signal-deep/5 text-accent">
                 <Building2 aria-hidden="true" className="size-6" />
               </span>
-              <h2 className="mt-4 text-lg font-semibold text-slate-950">
+              <h2 className="mt-4 text-lg font-semibold text-foreground">
                 Your company workspace starts here
               </h2>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
                 Create a workspace for your business or ask an owner to invite you to an existing
                 company.
               </p>
@@ -182,9 +180,9 @@ export function CompanyPickerPage() {
 
         <section>
           <Card className="overflow-hidden">
-            <div className="h-1.5 bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400" />
+            <div className="h-1.5 bg-moss" />
             <CardHeader>
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-cyan-800">
+              <div className="flex items-center gap-2 fp-label">
                 <Plus aria-hidden="true" className="size-4" />
                 New workspace
               </div>
@@ -208,7 +206,7 @@ export function CompanyPickerPage() {
                 )}
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800" htmlFor="company-name">
+                  <label className="text-sm font-medium text-foreground-body" htmlFor="company-name">
                     Company name
                   </label>
                   <Input
@@ -218,14 +216,14 @@ export function CompanyPickerPage() {
                     {...form.register("name")}
                   />
                   {form.formState.errors.name && (
-                    <p className="text-xs text-rose-700" role="alert">
+                    <p className="text-xs text-negative" role="alert">
                       {form.formState.errors.name.message}
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800" htmlFor="company-currency-create">
+                  <label className="text-sm font-medium text-foreground-body" htmlFor="company-currency-create">
                     Accounting currency
                   </label>
                   <Input
@@ -236,12 +234,12 @@ export function CompanyPickerPage() {
                     placeholder="INR"
                     {...form.register("currency_code")}
                   />
-                  <p className="text-xs leading-5 text-slate-500">
+                  <p className="text-xs leading-5 text-muted">
                     Enter the three-letter ISO 4217 code used by your books. The form starts with
                     INR; change it if your company uses another currency.
                   </p>
                   {form.formState.errors.currency_code && (
-                    <p className="text-xs text-rose-700" role="alert">
+                    <p className="text-xs text-negative" role="alert">
                       {form.formState.errors.currency_code.message}
                     </p>
                   )}
