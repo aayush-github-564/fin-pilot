@@ -131,7 +131,7 @@ function TransactionEditor({
         </label>
         <label className="space-y-1.5 text-sm font-medium text-foreground-body">
           Amount
-          <Input inputMode="decimal" placeholder="0.00" {...form.register("amount")} />
+          <Input className="fp-figure" inputMode="decimal" placeholder="0.00" {...form.register("amount")} />
           {form.formState.errors.amount && <span className="block text-xs text-negative">{form.formState.errors.amount.message}</span>}
         </label>
         <label className="space-y-1.5 text-sm font-medium text-foreground-body">
@@ -190,7 +190,7 @@ function TransactionRow({
         <p className="font-medium text-foreground">{transaction.description || "No description"}</p>
         <p className="mt-1 text-xs capitalize text-muted">{transaction.source}</p>
       </td>
-      <td className="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold tabular-nums text-foreground">
+      <td className="fp-figure whitespace-nowrap px-4 py-4 text-sm font-semibold text-foreground">
         <span className="inline-flex items-center justify-end gap-1.5">
           {!zeroAmount && (transaction.amount.startsWith("-") ? <ArrowUpRight aria-hidden="true" className="size-4 text-negative" /> : <ArrowDownRight aria-hidden="true" className="size-4 text-positive" />)}
           {formatMoney(transaction.amount, currency)}
@@ -318,7 +318,7 @@ export function TransactionsPage() {
         <CardHeader className="border-b border-line">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><CardTitle>Company ledger</CardTitle><CardDescription className="mt-1">Filter and page through the server’s newest-first transaction list.</CardDescription></div>
-            <Badge variant="neutral">{transactions.data ? `${transactions.data.total} records` : "Loading records"}</Badge>
+            <Badge className="tabular-nums" variant="neutral">{transactions.data ? `${transactions.data.total} records` : "Loading records"}</Badge>
           </div>
           <div className="grid gap-3 pt-3 sm:grid-cols-2 xl:grid-cols-4">
             <label className="space-y-1.5 text-xs font-semibold text-muted">Search description<Input aria-label="Search description" onChange={(event) => resetPage(() => setSearch(event.currentTarget.value))} placeholder="Search transactions" value={search} /></label>
@@ -355,7 +355,7 @@ export function TransactionsPage() {
             </table>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4">
-            <p className="text-sm text-muted">Page {Math.floor(offset / PAGE_SIZE) + 1} · {transactions.data.total} matching transactions</p>
+            <p className="text-sm text-muted">Page <span className="tabular-nums">{Math.floor(offset / PAGE_SIZE) + 1}</span> · <span className="tabular-nums">{transactions.data.total}</span> matching transactions</p>
             <div className="flex gap-2"><Button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} size="sm" variant="secondary">Previous</Button><Button disabled={!transactions.data.has_more} onClick={() => setOffset(offset + PAGE_SIZE)} size="sm" variant="secondary">Next</Button></div>
           </div>
         </>}

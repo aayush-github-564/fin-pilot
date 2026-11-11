@@ -9,7 +9,7 @@ import { Button } from "../../components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { ErrorMessage, LoadingState } from "../../components/ui/feedback";
 import { Input } from "../../components/ui/input";
-import { formatMoney } from "../../lib/money";
+import { formatFigureText, formatMoney } from "../../lib/money";
 import { useCompany, useRole } from "../companies/company-context";
 import type { SpendingAnomaly, SpendingAnomalyReport } from "./api";
 import { useRunAnomalyScan } from "./hooks";
@@ -53,14 +53,14 @@ function AnomalyCard({ anomaly, companyId, currency }: {
         <h3 className="mt-3 break-words text-base font-semibold text-foreground">{subject}</h3>
         <p className="mt-1 text-xs text-muted">{formatDate(anomaly.date)}{anomaly.category_name ? ` · ${anomaly.category_name}` : ""}</p>
       </div>
-      <p className="shrink-0 text-lg font-semibold tabular-nums text-foreground">{formatMoney(anomaly.amount, currency)}</p>
+      <p className="fp-figure shrink-0 text-lg font-semibold text-foreground">{formatMoney(anomaly.amount, currency)}</p>
     </div>
 
     <dl className="mt-4 grid gap-3 rounded-md bg-surface-raised p-4 sm:grid-cols-2 lg:grid-cols-4">
       <Metric label="Baseline average" value={formatMoney(anomaly.baseline_average, currency)} />
       <Metric label="Compared with" value={`${anomaly.baseline_transaction_count} prior expenses`} />
-      <Metric label="Ratio to average" value={`${anomaly.ratio_to_average}×`} />
-      <Metric label="Z-score" value={anomaly.z_score ?? "Not available"} />
+      <Metric label="Ratio to average" value={`${formatFigureText(anomaly.ratio_to_average)}×`} />
+      <Metric label="Z-score" value={anomaly.z_score === null ? "Not available" : formatFigureText(anomaly.z_score)} />
     </dl>
 
     <p className="mt-4 text-sm leading-6 text-foreground-body">{anomaly.explanation}</p>
@@ -76,7 +76,7 @@ function AnomalyCard({ anomaly, companyId, currency }: {
 function Metric({ label, value }: { label: string; value: string }) {
   return <div>
     <dt className="text-xs font-medium text-muted">{label}</dt>
-    <dd className="mt-1 break-words text-sm font-semibold tabular-nums text-foreground">{value}</dd>
+    <dd className="fp-figure mt-1 break-words text-sm font-semibold text-foreground">{value}</dd>
   </div>;
 }
 
@@ -140,11 +140,11 @@ function CompanyAnomalies({ companyId, currency }: { companyId: string; currency
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor="anomaly-days">
             Recent scan window (1–90 days)
-            <Input id="anomaly-days" max={DAY_MAX} min={DAY_MIN} onChange={(event) => { setDays(event.currentTarget.value); clearReport(); }} type="number" value={days} />
+            <Input className="fp-figure" id="anomaly-days" max={DAY_MAX} min={DAY_MIN} onChange={(event) => { setDays(event.currentTarget.value); clearReport(); }} type="number" value={days} />
           </label>
           <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor="anomaly-baseline-days">
             Earlier baseline window (30–730 days)
-            <Input id="anomaly-baseline-days" max={BASELINE_MAX} min={BASELINE_MIN} onChange={(event) => { setBaselineDays(event.currentTarget.value); clearReport(); }} type="number" value={baselineDays} />
+            <Input className="fp-figure" id="anomaly-baseline-days" max={BASELINE_MAX} min={BASELINE_MIN} onChange={(event) => { setBaselineDays(event.currentTarget.value); clearReport(); }} type="number" value={baselineDays} />
           </label>
         </div>
         <p className="text-xs leading-5 text-muted">Windows do not overlap. The baseline ends the day before the recent scan begins. Explanation wording may be AI-generated or deterministic; the amounts and comparisons are computed by FinPilot.</p>
@@ -174,7 +174,7 @@ function ReportView({ companyId, currency, report }: {
   return <section aria-labelledby="anomaly-report-heading" className="space-y-4">
     <Card>
       <CardHeader className="flex flex-wrap items-start justify-between gap-3">
-        <div><CardTitle id="anomaly-report-heading">Scan report</CardTitle><CardDescription className="mt-1">{report.scanned_transactions} expenses checked in the recent window.</CardDescription></div>
+        <div><CardTitle id="anomaly-report-heading">Scan report</CardTitle><CardDescription className="mt-1"><span className="tabular-nums">{report.scanned_transactions}</span> expenses checked in the recent window.</CardDescription></div>
         <Badge variant="neutral">On-demand · read-only</Badge>
         <div className="grid w-full gap-3 border-t border-line pt-4 sm:grid-cols-2">
           <p className="text-sm text-foreground-body"><span className="font-semibold">Recent window:</span> {formatDate(report.window_start)} – {formatDate(report.window_end)}</p>
@@ -188,7 +188,7 @@ function ReportView({ companyId, currency, report }: {
       <h2 className="mt-3 text-base font-semibold text-foreground">No unusual expenses found</h2>
       <p className="mt-1 text-sm text-muted">No expenses in {formatDate(report.window_start)} – {formatDate(report.window_end)} crossed the anomaly threshold.</p>
     </Card> : <div className="space-y-3">
-      <h2 className="text-base font-semibold text-foreground">Unusual expenses ({report.anomalies.length})</h2>
+      <h2 className="text-base font-semibold text-foreground">Unusual expenses (<span className="tabular-nums">{report.anomalies.length}</span>)</h2>
       {report.anomalies.map((anomaly) => <AnomalyCard anomaly={anomaly} companyId={companyId} currency={currency} key={anomaly.transaction_id} />)}
     </div>}
   </section>;

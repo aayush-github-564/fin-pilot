@@ -49,11 +49,11 @@ function isProcessing(status: string) {
   return status === "pending" || status === "processing";
 }
 
-function MissingField({ label, value }: { label: string; value: string | null | undefined }) {
+function MissingField({ label, value, isFigure = false }: { label: string; value: string | null | undefined; isFigure?: boolean }) {
   const missing = value === null || value === undefined || value.trim() === "";
   return <div className="space-y-1">
     <dt className="flex items-center gap-2 text-xs font-medium text-muted">{label}{missing && <Badge variant="caution">Needs review</Badge>}</dt>
-    <dd className={`break-words text-sm font-semibold ${missing ? "text-pine" : "text-foreground"}`}>{value || "Not extracted"}</dd>
+    <dd className={`${isFigure ? "fp-figure" : ""} break-words text-sm font-semibold ${missing ? "text-pine" : "text-foreground"}`}>{value || "Not extracted"}</dd>
   </div>;
 }
 
@@ -104,7 +104,7 @@ function InvoiceEditForm({
         </Select>
       </label>
       <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-vendor-${invoice.id}`}>Vendor or customer<Input autoComplete="organization" id={`invoice-vendor-${invoice.id}`} onChange={(event) => setVendor(event.currentTarget.value)} value={vendor} /></label>
-      <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-amount-${invoice.id}`}>Invoice total<Input id={`invoice-amount-${invoice.id}`} inputMode="decimal" onChange={(event) => setAmount(event.currentTarget.value)} placeholder="0.00" value={amount} /></label>
+      <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-amount-${invoice.id}`}>Invoice total<Input className="fp-figure" id={`invoice-amount-${invoice.id}`} inputMode="decimal" onChange={(event) => setAmount(event.currentTarget.value)} placeholder="0.00" value={amount} /></label>
       <label className="space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-date-${invoice.id}`}>Invoice date<Input id={`invoice-date-${invoice.id}`} onChange={(event) => setDate(event.currentTarget.value)} type="date" value={date} /></label>
     </div>}
     <label className="block max-w-xs space-y-1.5 text-xs font-semibold text-muted" htmlFor={`invoice-status-${invoice.id}`}>Payment status
@@ -169,7 +169,7 @@ function InvoiceCard({ invoice, companyId, currency, canWrite }: {
           <CardTitle className="mt-3 break-words">{invoice.vendor?.trim() || "Vendor or customer not extracted"}</CardTitle>
           <CardDescription className="mt-1">Invoice date: {formatDate(invoice.date)}{invoice.confirmed_at ? ` · Reviewed ${formatDate(invoice.confirmed_at.slice(0, 10))}` : ""}</CardDescription>
         </div>
-        <p className="shrink-0 text-lg font-semibold tabular-nums text-foreground">{invoice.amount === null || invoice.amount === undefined ? "Amount not extracted" : formatMoney(invoice.amount, currency)}</p>
+        <p className="fp-figure shrink-0 text-lg font-semibold text-foreground">{invoice.amount === null || invoice.amount === undefined ? "Amount not extracted" : formatMoney(invoice.amount, currency)}</p>
       </div>
     </CardHeader>
 
@@ -181,7 +181,7 @@ function InvoiceCard({ invoice, companyId, currency, canWrite }: {
         <MissingField label="Vendor or customer" value={invoice.vendor} />
         <MissingField label="Direction" value={invoice.direction === "purchase" ? "Purchase" : invoice.direction === "sale" ? "Sale" : null} />
         <MissingField label="Invoice date" value={invoice.date ? formatDate(invoice.date) : null} />
-        <MissingField label="Invoice total" value={invoice.amount === null || invoice.amount === undefined ? null : formatMoney(invoice.amount, currency)} />
+        <MissingField isFigure label="Invoice total" value={invoice.amount === null || invoice.amount === undefined ? null : formatMoney(invoice.amount, currency)} />
       </dl>
 
       {editing && <InvoiceEditForm
@@ -306,7 +306,7 @@ function CompanyInvoices({ companyId, currency, canWrite }: { companyId: string;
         {hasProcessing && atRefreshLimit && <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-caution/40 bg-caution/20 p-3" role="status"><p className="text-sm text-pine">Extraction is still running. Automatic checks have paused.</p><Button disabled={invoices.isFetching} onClick={() => void invoices.refetch()} size="sm" variant="secondary"><RotateCw aria-hidden="true" className="size-4" />{invoices.isFetching ? "Refreshing…" : "Refresh invoices"}</Button></div>}
         {visibleItems.map((invoice) => <InvoiceCard canWrite={canWrite} companyId={companyId} currency={currency} invoice={invoice} key={invoice.id} />)}
         {canLoadMore && <div className="flex justify-center border-t border-line pt-4"><Button disabled={invoices.isFetching} onClick={() => setLimit((current) => Math.min(MAX_PAGE_SIZE, current + PAGE_SIZE))} variant="secondary">{invoices.isFetching ? "Loading more…" : "Load more invoices"}</Button></div>}
-        {limit === MAX_PAGE_SIZE && allItems.length === limit && <p className="text-center text-xs text-muted">Showing the maximum of {MAX_PAGE_SIZE} invoices. Use the filters to narrow this list.</p>}
+        {limit === MAX_PAGE_SIZE && allItems.length === limit && <p className="text-center text-xs text-muted">Showing the maximum of <span className="tabular-nums">{MAX_PAGE_SIZE}</span> invoices. Use the filters to narrow this list.</p>}
       </div>}
     </Card>
   </div>;

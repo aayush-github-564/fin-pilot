@@ -88,7 +88,7 @@ function FactsBreakdown({ type, facts, currency }: {
       <Metric label="Inflows" value={formatMoney(parsed.data.inflows, currency)} />
       <Metric label="Outflows" value={formatMoney(parsed.data.outflows, currency)} />
       <Metric label="Net cash flow" value={formatMoney(parsed.data.net_cash_flow, currency)} />
-      <p className="text-xs text-muted sm:col-span-3">Based on {parsed.data.transaction_count} transactions.</p>
+      <p className="text-xs text-muted sm:col-span-3">Based on <span className="tabular-nums">{parsed.data.transaction_count}</span> transactions.</p>
     </div>;
   }
 
@@ -100,7 +100,7 @@ function FactsBreakdown({ type, facts, currency }: {
         <div className="overflow-x-auto rounded-sm border border-border">
           <table className="w-full min-w-[420px] text-left text-sm">
             <thead className="bg-surface-raised text-xs font-bold uppercase tracking-wide text-muted"><tr><th className="px-3 py-2">Category</th><th className="px-3 py-2 text-right">Amount</th><th className="px-3 py-2 text-right">Transactions</th></tr></thead>
-            <tbody>{parsed.data.items.map((item) => <tr className="border-t border-line" key={item.category_id}><td className="px-3 py-2">{item.category_name}</td><td className="px-3 py-2 text-right tabular-nums">{formatMoney(item.amount, currency)}</td><td className="px-3 py-2 text-right tabular-nums">{item.transaction_count}</td></tr>)}</tbody>
+            <tbody>{parsed.data.items.map((item) => <tr className="border-t border-line" key={item.category_id}><td className="px-3 py-2">{item.category_name}</td><td className="fp-figure px-3 py-2">{formatMoney(item.amount, currency)}</td><td className="fp-figure px-3 py-2">{item.transaction_count}</td></tr>)}</tbody>
           </table>
         </div>}
       {parsed.data.has_more && <p className="text-xs text-muted">{topCountLabel("categories", parsed.data.items.length)}</p>}
@@ -115,7 +115,7 @@ function FactsBreakdown({ type, facts, currency }: {
         <ul className="divide-y divide-line rounded-md border border-border">
           {parsed.data.items.map((item, index) => <li className="flex flex-wrap items-center justify-between gap-3 px-3 py-3" key={`${item.date}-${index}`}>
             <div className="min-w-0"><p className="truncate text-sm font-medium text-foreground-body">{item.description || "Expense"}</p><p className="mt-1 text-xs text-muted">{formatDate(item.date)}{item.category_name ? ` · ${item.category_name}` : ""}</p></div>
-            <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">{formatMoney(item.amount, currency)}</span>
+            <span className="fp-figure shrink-0 text-sm font-semibold text-foreground">{formatMoney(item.amount, currency)}</span>
           </li>)}
         </ul>}
       {parsed.data.has_more && <p className="text-xs text-muted">{topCountLabel("expenses", parsed.data.items.length)}</p>}
@@ -133,8 +133,8 @@ function FactsBreakdown({ type, facts, currency }: {
       </div>
       {parsed.data.items.length > 0 && <ul className="divide-y divide-line rounded-md border border-border">
         {parsed.data.items.map((item) => <li className="flex flex-wrap items-center justify-between gap-3 px-3 py-3" key={`${item.category_kind}-${item.category_name}`}>
-          <div><p className="text-sm font-medium text-foreground-body">{item.category_name}</p><p className="mt-1 text-xs text-muted">{item.category_kind} · {item.transaction_count} transactions{item.over_budget ? " · Over budget" : ""}</p></div>
-          <div className="text-right text-xs text-muted"><p>Budget {formatMoney(item.budgeted_amount, currency)}</p><p>Actual {formatMoney(item.actual_amount, currency)}</p></div>
+            <div><p className="text-sm font-medium text-foreground-body">{item.category_name}</p><p className="mt-1 text-xs text-muted">{item.category_kind} · <span className="tabular-nums">{item.transaction_count}</span> transactions{item.over_budget ? " · Over budget" : ""}</p></div>
+            <div className="fp-figure text-xs text-muted"><p>Budget {formatMoney(item.budgeted_amount, currency)}</p><p>Actual {formatMoney(item.actual_amount, currency)}</p></div>
         </li>)}
       </ul>}
       {parsed.data.has_more && <p className="text-xs text-muted">{topCountLabel("budget categories", parsed.data.items.length)}</p>}
@@ -147,7 +147,7 @@ function FactsBreakdown({ type, facts, currency }: {
 function Metric({ label, value }: { label: string; value: string }) {
   return <div className="rounded-md bg-surface px-3 py-3">
     <p className="text-xs font-medium text-muted">{label}</p>
-    <p className="mt-1 text-base font-semibold tabular-nums text-foreground">{value}</p>
+    <p className="fp-figure mt-1 text-base font-semibold text-foreground">{value}</p>
   </div>;
 }
 

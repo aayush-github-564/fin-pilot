@@ -160,6 +160,10 @@ select {
   border-radius: var(--fp-radius-lg) var(--fp-radius-lg) var(--fp-radius-lg) 4px;
 }
 
+.fp-cash-flow-chart .recharts-cartesian-axis-tick-value {
+  font-variant-numeric: tabular-nums;
+}
+
 .fp-query-block {
   background: var(--fp-dark-bg);
   border-color: var(--fp-dark-border);

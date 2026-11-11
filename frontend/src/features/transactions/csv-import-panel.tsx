@@ -135,9 +135,9 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold text-foreground" id="csv-import-results">Import results</h3>
-              <p className="mt-1 text-sm text-muted">{result.rows_seen} non-empty transaction rows checked.</p>
+              <p className="mt-1 text-sm text-muted"><span className="tabular-nums">{result.rows_seen}</span> non-empty transaction rows checked.</p>
             </div>
-            {stillPendingCount > 0 && <Badge variant="info">Refreshing {stillPendingCount} pending categorization{stillPendingCount === 1 ? "" : "s"}</Badge>}
+            {stillPendingCount > 0 && <Badge variant="info">Refreshing <span className="tabular-nums">{stillPendingCount}</span> pending categorization{stillPendingCount === 1 ? "" : "s"}</Badge>}
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -161,7 +161,7 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
             <div className="overflow-x-auto rounded-sm border border-border">
               <table className="w-full min-w-[640px] border-collapse text-left text-sm">
                 <thead className="bg-surface-raised text-xs font-bold uppercase tracking-wide text-muted">
-                  <tr><th className="px-4 py-3">CSV row</th><th className="px-4 py-3">Import result</th><th className="px-4 py-3">Categorization</th><th className="px-4 py-3">Details</th></tr>
+                  <tr><th className="px-4 py-3 text-right">CSV row</th><th className="px-4 py-3">Import result</th><th className="px-4 py-3">Categorization</th><th className="px-4 py-3">Details</th></tr>
                 </thead>
                 <tbody>
                   {visibleRows.map((row) => {
@@ -181,7 +181,7 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
                                 ? "Categorization failed; assign a category in the transactions list."
                                 : "Transaction added to the company ledger.";
                     return <tr className="border-t border-line" key={row.row_number}>
-                      <td className="px-4 py-3 tabular-nums">{row.row_number}</td>
+                      <td className="fp-figure px-4 py-3">{row.row_number}</td>
                       <td className="px-4 py-3"><Badge variant={resultVariant(row.status)}>{row.status}</Badge></td>
                       <td className="px-4 py-3">{categorizationLabel(categorization)}</td>
                       <td className="px-4 py-3 text-muted">{details}</td>
@@ -199,6 +199,6 @@ export function CsvImportPanel({ companyId, currencyCode }: { companyId: string;
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return <div className="rounded-md bg-surface-raised px-4 py-3">
     <p className="text-xs font-medium text-muted">{label}</p>
-    <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{value}</p>
+    <p className="fp-figure mt-1 text-xl font-semibold text-foreground">{value}</p>
   </div>;
 }

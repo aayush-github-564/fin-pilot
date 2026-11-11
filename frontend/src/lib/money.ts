@@ -1,5 +1,16 @@
 export type DecimalValue = string | number;
 
+function formatWithTrueMinus(formatter: Intl.NumberFormat, value: number): string {
+  return formatter
+    .formatToParts(value)
+    .map((part) => part.type === "minusSign" ? "−" : part.value)
+    .join("");
+}
+
+export function formatFigureText(value: string): string {
+  return value.startsWith("-") ? `−${value.slice(1)}` : value;
+}
+
 export function formatMoney(
   value: DecimalValue,
   currencyCode: string | null,
@@ -11,26 +22,26 @@ export function formatMoney(
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  if (!currencyCode) return numberFormat.format(amount);
+  if (!currencyCode) return formatWithTrueMinus(numberFormat, amount);
 
   try {
-    return new Intl.NumberFormat(undefined, {
+    return formatWithTrueMinus(new Intl.NumberFormat(undefined, {
       style: "currency",
       currency: currencyCode,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(amount);
+    }), amount);
   } catch {
-    return `${currencyCode} ${numberFormat.format(amount)}`;
+    return `${currencyCode} ${formatWithTrueMinus(numberFormat, amount)}`;
   }
 }
 
 export function formatRunwayMonths(value: DecimalValue): string {
   const months = Number(value);
   if (!Number.isFinite(months)) return "—";
-  return new Intl.NumberFormat(undefined, {
+  return formatWithTrueMinus(new Intl.NumberFormat(undefined, {
     maximumFractionDigits: 2,
-  }).format(months);
+  }), months);
 }
 
 export function formatCompactMoney(value: number, currencyCode: string | null): string {
@@ -40,14 +51,14 @@ export function formatCompactMoney(value: number, currencyCode: string | null): 
   };
   if (currencyCode) {
     try {
-      return new Intl.NumberFormat(undefined, {
+      return formatWithTrueMinus(new Intl.NumberFormat(undefined, {
         ...options,
         style: "currency",
         currency: currencyCode,
-      }).format(value);
+      }), value);
     } catch {
       // A historic code may no longer be supported by this browser's Intl data.
     }
   }
-  return new Intl.NumberFormat(undefined, options).format(value);
+  return formatWithTrueMinus(new Intl.NumberFormat(undefined, options), value);
 }

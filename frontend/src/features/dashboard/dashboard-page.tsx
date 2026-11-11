@@ -109,7 +109,7 @@ function MetricCard({
             {icon}
           </span>
         </div>
-        <div className="fp-kpi-value mt-3 min-h-9">
+        <div className="fp-kpi-value fp-figure mt-3 min-h-9">
           {children}
         </div>
         <p className="fp-kpi-helper mt-1">{detail}</p>
@@ -229,6 +229,7 @@ function CashFlowRangeControls({
             </label>
             <Input
               autoComplete="off"
+              className="fp-figure"
               id="cash-balance"
               inputMode="decimal"
               placeholder="e.g. 25000.00"
@@ -347,7 +348,7 @@ function SummaryAmount({
   return (
     <div className="min-w-0">
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 truncate font-semibold tabular-nums text-foreground-body">
+      <p className="fp-figure mt-1 truncate font-semibold text-foreground-body">
         {formatMoney(value, currencyCode)}
       </p>
     </div>
@@ -400,7 +401,7 @@ function RecentTransactions({
                     <Badge variant="neutral">{transaction.categorization_status.replaceAll("_", " ")}</Badge>
                   </div>
                 </div>
-                <p className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                <p className="fp-figure shrink-0 text-sm font-semibold text-foreground">
                   {formatMoney(transaction.amount, currencyCode)}
                 </p>
               </div>
@@ -565,7 +566,7 @@ export function DashboardPage() {
                   Inflows and outflows by {granularity} for {metrics?.start_date ?? range.start_date} through {metrics?.end_date ?? range.end_date}.
                 </CardDescription>
               </div>
-              {metrics && <Badge variant="neutral">{metrics.transaction_count} transactions</Badge>}
+              {metrics && <Badge className="tabular-nums" variant="neutral">{metrics.transaction_count} transactions</Badge>}
             </div>
             <div className="mt-5">
               {metricsQuery.isPending || metricsQuery.isError ? (
@@ -611,8 +612,8 @@ export function DashboardPage() {
                 <p className="mt-1 text-sm text-positive">There are no transactions waiting for category review.</p>
               </div>
             ) : (
-              <div className="mt-5 flex items-end gap-2">
-                <span className="text-4xl font-semibold tabular-nums tracking-tight text-foreground">{reviewCountQuery.data}</span>
+              <div className="mt-5 flex items-end justify-end gap-2">
+                <span className="fp-figure text-4xl font-semibold tracking-tight text-foreground">{reviewCountQuery.data}</span>
                 <span className="pb-1 text-sm text-muted">to review</span>
               </div>
             )}

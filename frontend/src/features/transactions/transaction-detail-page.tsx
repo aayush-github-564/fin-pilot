@@ -46,7 +46,7 @@ export function TransactionDetailPage() {
           </div>
           <Badge variant={statusVariant(item.categorization_status)}>{item.categorization_status.replaceAll("_", " ")}</Badge>
         </div>
-        <p className="mt-4 inline-flex items-center gap-2 text-xl font-semibold tabular-nums text-foreground">
+        <p className="fp-figure mt-4 flex w-full items-center justify-end gap-2 text-xl font-semibold text-foreground">
           {item.amount.startsWith("-") ? <ArrowUpRight aria-hidden="true" className="size-5 text-negative" /> : <ArrowDownRight aria-hidden="true" className="size-5 text-positive" />}
           {formatMoney(item.amount, company.currency_code)}
         </p>

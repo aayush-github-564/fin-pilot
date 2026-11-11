@@ -79,7 +79,7 @@ function BudgetFields({
       {form.formState.errors.period && <span className="block text-xs text-negative">{form.formState.errors.period.message}</span>}
     </label>
     <label className="space-y-1.5 text-sm font-medium text-foreground-body">Budget limit
-      <Input inputMode="decimal" placeholder="0.00" {...form.register("limit_amount")} />
+      <Input className="fp-figure" inputMode="decimal" placeholder="0.00" {...form.register("limit_amount")} />
       {form.formState.errors.limit_amount && <span className="block text-xs text-negative">{form.formState.errors.limit_amount.message}</span>}
     </label>
     <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-1">
@@ -116,7 +116,7 @@ function BudgetCard({ budget, categories, categoryName, currency, companyId, can
         <p className="mt-1 text-xs text-muted">Expense budget</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <p className="mr-2 text-lg font-semibold tabular-nums text-foreground">{formatMoney(budget.limit_amount, currency)}</p>
+        <p className="fp-figure mr-2 text-lg font-semibold text-foreground">{formatMoney(budget.limit_amount, currency)}</p>
         {canWrite && <Button aria-label={`Edit ${categoryName} budget for ${periodLabel}`} onClick={() => { setEditing(true); update.reset(); remove.reset(); }} size="icon" title="Edit budget" variant="quiet"><Pencil aria-hidden="true" className="size-4" /></Button>}
         {canWrite && !confirmDelete && <Button aria-label={`Delete ${categoryName} budget for ${periodLabel}`} onClick={() => { setConfirmDelete(true); remove.reset(); }} size="icon" title="Delete budget" variant="quiet"><Trash2 aria-hidden="true" className="size-4 text-negative" /></Button>}
         {canWrite && confirmDelete && <div className="flex items-center gap-2"><span className="text-xs text-negative">Delete this budget?</span><Button disabled={remove.isPending} onClick={() => remove.mutate(budget.id, { onSuccess: () => setConfirmDelete(false) })} size="sm" variant="danger">{remove.isPending ? "Deleting…" : "Confirm"}</Button><Button disabled={remove.isPending} onClick={() => setConfirmDelete(false)} size="sm" variant="secondary">Cancel</Button></div>}

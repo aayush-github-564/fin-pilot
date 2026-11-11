@@ -75,7 +75,7 @@ function ReviewItem({
         <h2 className="mt-3 truncate text-base font-semibold text-foreground" title={transaction.description ?? "No description"}>
           {transaction.description || "No description"}
         </h2>
-        <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-foreground-body">
+        <p className="fp-figure mt-1 flex w-full items-center justify-end gap-1.5 text-sm font-semibold text-foreground-body">
           {!noAmount && (transaction.amount.startsWith("-")
             ? <ArrowUpRight aria-hidden="true" className="size-4 text-negative" />
             : <ArrowDownRight aria-hidden="true" className="size-4 text-positive" />)}
@@ -86,7 +86,7 @@ function ReviewItem({
       <div className="rounded-md bg-surface-raised p-4">
         <p className="text-xs font-bold uppercase tracking-wide text-muted">Suggested category</p>
         <p className="mt-1 font-semibold text-foreground">{suggestion?.name ?? (transaction.suggested_category_id ? "Suggestion unavailable" : "No suggestion")}</p>
-        <p className="mt-1 text-xs text-muted">{suggestedConfidence(transaction.suggestion_confidence)}</p>
+        <p className="mt-1 text-right text-xs text-muted"><span className="tabular-nums">{suggestedConfidence(transaction.suggestion_confidence)}</span></p>
       </div>
 
       {canWrite && <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">

@@ -64,6 +64,7 @@ export function CashFlowChart({
       <ResponsiveContainer height="100%" minWidth={0} width="100%">
         <AreaChart
           accessibilityLayer
+          className="fp-cash-flow-chart"
           data={chartData}
           margin={{ top: 12, right: 8, left: 4, bottom: 4 }}
         >
@@ -80,7 +81,7 @@ export function CashFlowChart({
             axisLine={false}
             tickFormatter={(value: number) => formatCompactMoney(value, currencyCode)}
             tickLine={false}
-            tick={{ fill: "var(--fp-stone)", fontFamily: "var(--fp-font-mono)", fontSize: 12 }}
+            tick={{ fill: "var(--fp-stone)", fontFamily: "var(--fp-font-mono)", fontSize: 12, textAnchor: "end" }}
             width={72}
           />
           <Tooltip
@@ -96,6 +97,8 @@ export function CashFlowChart({
               boxShadow: "none",
               color: "var(--fp-pine)",
               fontFamily: "var(--fp-font-mono)",
+              fontVariantNumeric: "tabular-nums",
+              textAlign: "right",
             }}
           />
           <Legend

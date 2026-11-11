@@ -78,8 +78,8 @@ function FactsView({ digest, currency }: { digest: WeeklyDigest; currency: strin
       <h2 className="text-base font-semibold text-foreground" id="top-expenses">Top expense categories</h2>
       {facts.top_expense_categories.items.length === 0 ? <p className="text-sm text-muted">No categorized expenses were recorded this week.</p> : <div className="divide-y divide-line rounded-md border border-border bg-surface">
         {facts.top_expense_categories.items.map((item) => <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3" key={item.category_name}>
-          <span className="text-sm font-medium text-foreground-body">{item.category_name}<span className="ml-2 text-xs text-muted">{item.transaction_count} transactions</span></span>
-          <span className="text-sm font-semibold tabular-nums text-foreground">{formatMoney(item.outflows, currency)}</span>
+          <span className="text-sm font-medium text-foreground-body">{item.category_name}<span className="ml-2 text-xs text-muted"><span className="tabular-nums">{item.transaction_count}</span> transactions</span></span>
+          <span className="fp-figure text-sm font-semibold text-foreground">{formatMoney(item.outflows, currency)}</span>
         </div>)}
       </div>}
       {facts.top_expense_categories.truncated && <p className="text-sm text-pine" role="status">Only the five largest expense categories are shown.</p>}
@@ -95,7 +95,7 @@ function FactsView({ digest, currency }: { digest: WeeklyDigest; currency: strin
         <div className="divide-y divide-line rounded-md border border-border bg-surface">
           {facts.month_to_date_budget.items.map((item) => <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3" key={`${item.category_kind}-${item.category_name}`}>
             <span className="text-sm font-medium text-foreground-body">{item.category_name}{item.over_budget && <Badge className="ml-2" variant="danger">Over budget</Badge>}</span>
-            <span className="text-sm tabular-nums text-foreground-body">{formatMoney(item.actual_amount, currency)} / {formatMoney(item.budgeted_amount, currency)}</span>
+            <span className="fp-figure text-sm text-foreground-body">{formatMoney(item.actual_amount, currency)} / {formatMoney(item.budgeted_amount, currency)}</span>
           </div>)}
         </div>
       </>}
@@ -105,7 +105,7 @@ function FactsView({ digest, currency }: { digest: WeeklyDigest; currency: strin
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-center justify-between gap-3"><dt className="text-muted">{label}</dt><dd className="font-semibold tabular-nums text-foreground">{value}</dd></div>;
+  return <div className="flex items-center justify-between gap-3"><dt className="text-muted">{label}</dt><dd className="fp-figure font-semibold text-foreground">{value}</dd></div>;
 }
 
 function DigestView({ digest, currency }: { digest: WeeklyDigest; currency: string | null }) {
