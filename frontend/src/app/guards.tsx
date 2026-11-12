@@ -6,23 +6,26 @@ import { useAuth } from "./auth-context";
 import { useCompanies } from "../features/companies/hooks";
 
 export function RequireAuthentication({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+  if (isLoading) return <LoadingState label="Checking your session" />;
   if (isAuthenticated) return children;
   const next = `${location.pathname}${location.search}${location.hash}`;
   return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
 }
 
 export function RedirectAuthenticated({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return <LoadingState label="Checking your session" />;
   if (isAuthenticated) return <Navigate to="/" replace />;
   return children;
 }
 
 export function HomeRedirect() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const companies = useCompanies(isAuthenticated);
 
+  if (isLoading) return <LoadingState label="Checking your session" />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (companies.isPending) return <LoadingState label="Opening your workspace" />;
   if (companies.isError) {

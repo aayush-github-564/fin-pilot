@@ -12,14 +12,52 @@ from app.api.deps import get_current_company_member, get_db
 from app.models.budget import Budget
 from app.models.category import Category, CategoryKind
 from app.models.company_member import CompanyMember
+from app.models.invoice import Invoice, ProcessingStatus
 from app.models.transaction import Transaction
-from app.schemas.metrics import BudgetVsActualRead, CashFlowMetricsRead
+from app.schemas.metrics import (
+    BudgetVsActualRead,
+    CashFlowMetricsRead,
+    InvoiceDocumentCountsRead,
+)
 from app.services.cash_flow import build_cash_flow_report
 
 router = APIRouter(prefix="/companies/{company_id}/metrics", tags=["metrics"])
 MAX_RANGE_DAYS = 366
 MAX_FINANCIAL_AMOUNT = Decimal("9999999999.99")
 CENT = Decimal("0.01")
+
+
+@router.get("/documents", response_model=InvoiceDocumentCountsRead)
+async def get_invoice_document_counts(
+    company_id: UUID,
+    membership: CompanyMember = Depends(get_current_company_member),
+    db: AsyncSession = Depends(get_db),
+) -> InvoiceDocumentCountsRead:
+    pending_states = (ProcessingStatus.pending, ProcessingStatus.processing)
+    result = await db.execute(
+        select(
+            func.count(Invoice.id).label("total"),
+            func.count(case((Invoice.processing_status.in_(pending_states), 1))).label(
+                "processing"
+            ),
+            func.count(
+                case(
+                    (
+                        (Invoice.processing_status == ProcessingStatus.complete)
+                        & Invoice.confirmed_at.is_(None),
+                        1,
+                    )
+                )
+            ).label("awaiting_review"),
+            func.count(case((Invoice.confirmed_at.is_not(None), 1))).label(
+                "confirmed"
+            ),
+            func.count(
+                case((Invoice.processing_status == ProcessingStatus.failed, 1))
+            ).label("failed"),
+        ).where(Invoice.company_id == company_id)
+    )
+    return InvoiceDocumentCountsRead.model_validate(result.one()._mapping)
 
 
 def _cash_flow_range(

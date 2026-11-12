@@ -3,6 +3,8 @@ from app.models.category import Category, CategoryKind
 from app.models.chat_query import ChatQuery
 from app.models.company import Company
 from app.models.company_member import CompanyMember, CompanyRole
+from app.models.company_invitation import CompanyInvitation
+from app.models.membership_event import MembershipEvent
 from app.models.invoice import (
     Invoice,
     InvoiceDirection,
@@ -26,6 +28,8 @@ __all__ = [
     "Company",
     "CompanyMember",
     "CompanyRole",
+    "CompanyInvitation",
+    "MembershipEvent",
     "Invoice",
     "InvoiceDirection",
     "InvoiceStatus",

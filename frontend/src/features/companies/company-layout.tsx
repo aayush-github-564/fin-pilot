@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, CalendarDays, ClipboardCheck, LayoutDashboard, LogOut, MessageCircle, ReceiptText, Settings2, Tags, WalletCards } from "lucide-react";
+import { Activity, ArrowLeftRight, CalendarDays, ClipboardCheck, LayoutDashboard, LogOut, MessageCircle, ReceiptText, Settings2, Tags, UsersRound, WalletCards } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from "react-router-dom";
 
 import { Badge } from "../../components/ui/badge";
@@ -23,7 +23,7 @@ function CompanyWorkspace({
 }) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { role } = useRole();
+  const { role, roleLabel, roleDescription, canManageMembers } = useRole();
   const navigationClass = ({ isActive }: { isActive: boolean }) =>
     `flex h-11 items-center gap-3 rounded-sm px-3.5 text-sm font-semibold transition ${
       isActive
@@ -78,14 +78,17 @@ function CompanyWorkspace({
           <NavLink className={navigationClass} to={`/c/${company.company_id}/settings`}>
             {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><Settings2 aria-hidden="true" className="size-4" />Company settings</>}
           </NavLink>
+          {canManageMembers && <NavLink className={navigationClass} to={`/c/${company.company_id}/members`}>
+            {({ isActive }) => <><span aria-hidden="true" className={`size-[7px] shrink-0 rounded-pill ${isActive ? "bg-dark-accent" : "bg-transparent"}`} /><UsersRound aria-hidden="true" className="size-4" />Members</>}
+          </NavLink>}
         </nav>
 
         <div className="mt-auto rounded-lg bg-dark-surface p-4">
           <p className="text-xs font-semibold text-dark-text">Your access</p>
           <div className="mt-2 flex items-center justify-between gap-2">
-            <Badge className="border border-dark-border bg-dark-bg text-dark-accent" variant={role === "viewer" ? "neutral" : "info"}>{role}</Badge>
-            <span className="text-xs text-dark-text-muted">Company scoped</span>
+            <Badge className="border border-dark-border bg-dark-bg text-dark-accent" variant={role === "viewer" ? "neutral" : "info"}>{roleLabel}</Badge>
           </div>
+          <p className="mt-2 text-xs leading-5 text-dark-text-muted">{roleDescription}</p>
         </div>
       </aside>
 
@@ -112,7 +115,7 @@ function CompanyWorkspace({
 
             <div className="flex items-center gap-2 sm:gap-3">
               <Badge className="lg:hidden" variant={role === "viewer" ? "neutral" : "info"}>
-                {role}
+                {roleLabel}
               </Badge>
               <span className="hidden max-w-48 truncate text-sm text-muted sm:block">{email}</span>
               <Button

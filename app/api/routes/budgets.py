@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_company_member, get_db, require_role
+from app.api.deps import get_current_company_member, get_db, require_permission
+from app.core.permissions import Permission
 from app.models.budget import Budget
 from app.models.company_member import CompanyMember
 from app.schemas.budget import BudgetCreate, BudgetRead, BudgetUpdate
@@ -17,7 +18,7 @@ router = APIRouter(prefix="/companies/{company_id}/budgets", tags=["budgets"])
 async def create_budget(
     company_id: uuid.UUID,
     payload: BudgetCreate,
-    membership: CompanyMember = Depends(require_role("owner", "accountant")),
+    membership: CompanyMember = Depends(require_permission(Permission.budgets_manage)),
     db: AsyncSession = Depends(get_db),
 ):
     await validate_category_scope(db, company_id, payload.category_id)
@@ -60,7 +61,7 @@ async def update_budget(
     company_id: uuid.UUID,
     payload: BudgetUpdate,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.budgets_manage)),
 ):
     result = await db.execute(
         select(Budget).where(Budget.id == budget_id, Budget.company_id == company_id)
@@ -88,7 +89,7 @@ async def delete_budget(
     budget_id: uuid.UUID,
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.budgets_manage)),
 ):
     result = await db.execute(
         select(Budget).where(Budget.id == budget_id, Budget.company_id == company_id)

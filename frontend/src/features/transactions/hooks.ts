@@ -145,16 +145,16 @@ export function useOverrideReviewCategory(companyId: string) {
   });
 }
 
-export function useRecentTransactions(companyId: string) {
+export function useRecentTransactions(companyId: string, enabled = true) {
   return useQuery({
     queryKey: recentTransactionsQueryKey(companyId),
     queryFn: () =>
       listTransactions(companyId, { offset: 0, limit: RECENT_TRANSACTION_LIMIT }),
-    enabled: Boolean(companyId),
+    enabled: Boolean(companyId && enabled),
   });
 }
 
-export function useReviewQueueCount(companyId: string) {
+export function useReviewQueueCount(companyId: string, enabled = true) {
   return useQuery({
     queryKey: reviewQueueCountQueryKey(companyId),
     queryFn: async () => {
@@ -165,6 +165,6 @@ export function useReviewQueueCount(companyId: string) {
       });
       return page.total;
     },
-    enabled: Boolean(companyId),
+    enabled: Boolean(companyId && enabled),
   });
 }

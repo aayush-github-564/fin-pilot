@@ -17,7 +17,8 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_arq_redis, get_current_company_member, get_db, require_role
+from app.api.deps import get_arq_redis, get_current_company_member, get_db, require_permission
+from app.core.permissions import Permission
 from app.models.company_member import CompanyMember
 from app.models.invoice import Invoice, InvoiceDirection, ProcessingStatus
 from app.schemas.invoice import InvoiceCreate, InvoiceRead, InvoiceUpdate
@@ -30,7 +31,7 @@ router = APIRouter(prefix="/companies/{company_id}/invoices", tags=["invoices"])
 async def create_invoice(
     company_id: uuid.UUID,
     payload: InvoiceCreate,
-    membership: CompanyMember = Depends(require_role("owner", "accountant")),
+    membership: CompanyMember = Depends(require_permission(Permission.invoice_upload)),
     db: AsyncSession = Depends(get_db),
 ):
     invoice = Invoice(company_id=company_id, **payload.model_dump())
@@ -65,7 +66,7 @@ async def upload_invoice(
     request: Request,
     file: UploadFile = File(...),
     direction: InvoiceDirection = Form(...),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.invoice_upload)),
     db: AsyncSession = Depends(get_db),
     redis: ArqRedis = Depends(get_arq_redis),
 ):
@@ -142,7 +143,7 @@ async def confirm_invoice(
     invoice_id: uuid.UUID,
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.invoice_review)),
 ):
     result = await db.execute(
         select(Invoice)
@@ -184,7 +185,7 @@ async def update_invoice(
     company_id: uuid.UUID,
     payload: InvoiceUpdate,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.invoice_review)),
 ):
     result = await db.execute(
         select(Invoice)
@@ -217,7 +218,7 @@ async def delete_invoice(
     invoice_id: uuid.UUID,
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.invoices_manage)),
 ):
     result = await db.execute(
         select(Invoice).where(

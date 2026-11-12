@@ -10,7 +10,12 @@ export const invoiceListQueryKey = (companyId: string, query: InvoiceListQuery) 
 
 function useInvalidateInvoices(companyId: string) {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: ["company", companyId, "invoices"] });
+  return () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["company", companyId, "invoices"] }),
+    queryClient.invalidateQueries({
+      queryKey: ["company", companyId, "metrics", "invoice-documents"],
+    }),
+  ]);
 }
 
 export function useInvoices(companyId: string, limit: number) {

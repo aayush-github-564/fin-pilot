@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 import type { components } from "../../api/schema";
 import { CompanyProvider } from "../companies/company-context";
@@ -93,15 +94,34 @@ const recentTransactions: components["schemas"]["TransactionPageRead"] = {
   has_more: false,
 };
 
-function renderDashboard() {
+const confirmedDocumentCounts: components["schemas"]["InvoiceDocumentCountsRead"] = {
+  total: 1,
+  processing: 0,
+  awaiting_review: 0,
+  confirmed: 1,
+  failed: 0,
+};
+
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="location">{location.pathname}{location.hash}</output>;
+}
+
+function renderDashboard({ role = "owner" }: {
+  role?: CompanyMembership["role"];
+  counts?: components["schemas"]["InvoiceDocumentCountsRead"];
+} = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <CompanyProvider company={company}>
-        <DashboardPage />
-      </CompanyProvider>
+      <MemoryRouter>
+        <CompanyProvider company={{ ...company, role }}>
+          <LocationProbe />
+          <DashboardPage />
+        </CompanyProvider>
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -109,13 +129,18 @@ function renderDashboard() {
 function installDashboardHandlers({
   cashFlowHandler,
   budgetHandler,
+  counts = confirmedDocumentCounts,
   requestUrls,
 }: {
   cashFlowHandler?: (url: URL) => typeof cashFlow;
   budgetHandler?: (url: URL) => typeof budgetReport;
+  counts?: components["schemas"]["InvoiceDocumentCountsRead"] | (() => components["schemas"]["InvoiceDocumentCountsRead"]);
   requestUrls?: string[];
 } = {}) {
   server.use(
+    http.get("*/api/v1/companies/company-a/metrics/documents", () => {
+      return HttpResponse.json(typeof counts === "function" ? counts() : counts);
+    }),
     http.get("*/api/v1/companies/company-a/metrics/cash-flow", ({ request }) => {
       const url = new URL(request.url);
       requestUrls?.push(url.toString());
@@ -152,6 +177,98 @@ describe("company dashboard", () => {
     expect(screen.getByText("Travel")).toBeInTheDocument();
     expect(screen.getAllByText(formatMoney("350.00", "USD"))).toHaveLength(2);
     expect(screen.getByText("Budget vs actual")).toBeInTheDocument();
+  });
+
+  it("shows a first-run hero and opens the existing invoice flow", async () => {
+    const user = userEvent.setup();
+    const requestUrls: string[] = [];
+    installDashboardHandlers({
+      counts: { total: 0, processing: 0, awaiting_review: 0, confirmed: 0, failed: 0 },
+      requestUrls,
+    });
+    renderDashboard();
+
+    expect(await screen.findByRole("heading", { name: "Upload an invoice to get started" })).toBeInTheDocument();
+    expect(screen.getByText("Northstar Studio")).toBeInTheDocument();
+    expect(screen.getByText("USD")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Financial key performance indicators" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Cash flow", { selector: "h2" })).not.toBeInTheDocument();
+    expect(requestUrls.some((url) => url.includes("cash-flow") || url.includes("budget-vs-actual"))).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "Upload invoice" }));
+    expect(screen.getByTestId("location")).toHaveTextContent("/c/company-a/invoices#upload");
+  });
+
+  it("keeps the first-run upload action out of the viewer dashboard", async () => {
+    installDashboardHandlers({
+      counts: { total: 0, processing: 0, awaiting_review: 0, confirmed: 0, failed: 0 },
+    });
+    renderDashboard({ role: "viewer" });
+
+    expect(await screen.findByText("Ask an Owner or Admin to upload an invoice.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Upload invoice" })).not.toBeInTheDocument();
+  });
+
+  it("shows the processing state without a button", async () => {
+    installDashboardHandlers({
+      counts: { total: 1, processing: 1, awaiting_review: 0, confirmed: 0, failed: 0 },
+    });
+    renderDashboard();
+
+    expect(await screen.findByRole("heading", { name: "FinPilot is reading your invoice" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /upload/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("Cash flow")).not.toBeInTheDocument();
+  });
+
+  it("refreshes document counts while processing and moves to review when extraction finishes", async () => {
+    let requestCount = 0;
+    installDashboardHandlers({
+      counts: () => {
+        requestCount += 1;
+        return requestCount === 1
+          ? { total: 1, processing: 1, awaiting_review: 0, confirmed: 0, failed: 0 }
+          : { total: 1, processing: 0, awaiting_review: 1, confirmed: 0, failed: 0 };
+      },
+    });
+    renderDashboard();
+
+    expect(await screen.findByRole("heading", { name: "FinPilot is reading your invoice" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Confirm your first invoice" }, { timeout: 5_000 })).toBeInTheDocument();
+    expect(requestCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it("tells viewers to ask an Owner or Admin while extraction is processing", async () => {
+    installDashboardHandlers({
+      counts: { total: 1, processing: 1, awaiting_review: 0, confirmed: 0, failed: 0 },
+    });
+    renderDashboard({ role: "viewer" });
+
+    expect(await screen.findByRole("heading", { name: "FinPilot is reading your invoice" })).toBeInTheDocument();
+    expect(screen.getByText("Ask an Owner or Admin to upload invoices for you.")).toBeInTheDocument();
+  });
+
+  it("routes the awaiting-review state to the existing invoice list", async () => {
+    const user = userEvent.setup();
+    installDashboardHandlers({
+      counts: { total: 1, processing: 0, awaiting_review: 1, confirmed: 0, failed: 0 },
+    });
+    renderDashboard();
+
+    expect(await screen.findByRole("heading", { name: "Confirm your first invoice" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Review first invoice" }));
+    expect(screen.getByTestId("location")).toHaveTextContent("/c/company-a/invoices");
+  });
+
+  it("offers the existing upload flow again when only uploads failed", async () => {
+    const user = userEvent.setup();
+    installDashboardHandlers({
+      counts: { total: 1, processing: 0, awaiting_review: 0, confirmed: 0, failed: 1 },
+    });
+    renderDashboard();
+
+    expect(await screen.findByRole("heading", { name: "Your invoice could not be read" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Upload again" }));
+    expect(screen.getByTestId("location")).toHaveTextContent("/c/company-a/invoices#upload");
   });
 
   it("sends selected granularity and cash balance to the metrics API", async () => {

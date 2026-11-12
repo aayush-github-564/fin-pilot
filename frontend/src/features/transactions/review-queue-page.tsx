@@ -113,7 +113,7 @@ function ReviewItem({
 
 export function ReviewQueuePage() {
   const company = useCompany();
-  const { canWrite } = useRole();
+  const { canCategorize: canWrite } = useRole();
   const [skip, setSkip] = useState(0);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
   const query = { skip, limit: PAGE_SIZE };

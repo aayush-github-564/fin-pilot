@@ -59,7 +59,7 @@ export function CashFlowChart({
   return (
     <figure className="h-72 w-full min-w-0" aria-labelledby="cash-flow-chart-caption">
       <figcaption className="sr-only" id="cash-flow-chart-caption">
-        Cash-flow chart. Lines show inflows and outflows returned by the metrics service.
+        Cash-flow chart showing inflows and outflows.
       </figcaption>
       <ResponsiveContainer height="100%" minWidth={0} width="100%">
         <AreaChart

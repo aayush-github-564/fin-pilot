@@ -11,6 +11,8 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID, uuid4
 
+from fastapi import Request
+
 # Set these before any application modules are imported during test collection.
 os.environ["SECRET_KEY"] = "pytest-only-secret-key"
 os.environ["ANTHROPIC_API_KEY"] = "pytest-only-not-a-real-api-key"
@@ -87,8 +89,22 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 class TestActor:
     user_id: UUID
     company_id: UUID
+    email: str
     role: str
     headers: dict[str, str]
+
+
+TEST_TOKEN_CLAIMS: dict[str, dict[str, object]] = {}
+
+
+@pytest.fixture
+def register_test_token() -> Callable[[dict[str, object]], str]:
+    def register(claims: dict[str, object]) -> str:
+        token = str(uuid4())
+        TEST_TOKEN_CLAIMS[token] = claims
+        return token
+
+    return register
 
 
 class FakeArqPool:
@@ -179,9 +195,11 @@ async def _truncate_test_tables() -> None:
 async def isolate_database_per_test() -> AsyncIterator[None]:
     # Routes commit their own sessions, so rollback cannot isolate API requests.
     # Reset before and after each test, preserving Alembic's version marker.
+    TEST_TOKEN_CLAIMS.clear()
     await _truncate_test_tables()
     yield
     await _truncate_test_tables()
+    TEST_TOKEN_CLAIMS.clear()
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True, loop_scope="session")
@@ -206,8 +224,17 @@ def fake_chat_client() -> FakeChatClient:
 async def async_client(
     fake_arq_pool: FakeArqPool, fake_chat_client: FakeChatClient
 ) -> AsyncIterator[AsyncClient]:
-    from fastapi import FastAPI
+    from fastapi import FastAPI, HTTPException
     from app.main import app
+    from app.api.deps import get_verified_token_claims
+
+    async def fake_verified_token_claims(request: Request) -> dict[str, object]:
+        authorization = request.headers.get("authorization", "")
+        token = authorization.removeprefix("Bearer ")
+        claims = TEST_TOKEN_CLAIMS.get(token)
+        if claims is None:
+            raise HTTPException(status_code=401, detail="Could not validate credentials")
+        return claims
 
     @asynccontextmanager
     async def fake_lifespan(application: FastAPI) -> AsyncIterator[None]:
@@ -218,6 +245,7 @@ async def async_client(
 
     original_lifespan = app.router.lifespan_context
     app.router.lifespan_context = fake_lifespan
+    app.dependency_overrides[get_verified_token_claims] = fake_verified_token_claims
     try:
         async with app.router.lifespan_context(app):
             async with AsyncClient(
@@ -225,19 +253,22 @@ async def async_client(
             ) as client:
                 yield client
     finally:
+        app.dependency_overrides.pop(get_verified_token_claims, None)
         app.router.lifespan_context = original_lifespan
 
 
 @pytest_asyncio.fixture(loop_scope="session")
-async def actor_factory() -> Callable[[Literal["owner", "accountant", "viewer"]], object]:
-    async def create_actor(role: Literal["owner", "accountant", "viewer"]) -> TestActor:
+async def actor_factory() -> Callable[[Literal["owner", "accountant", "member", "viewer"]], object]:
+    async def create_actor(role: Literal["owner", "accountant", "member", "viewer"]) -> TestActor:
         from app.core.db import AsyncSessionLocal
-        from app.core.security import create_access_token
         from app.models import Company, CompanyMember, CompanyRole, User
 
+        auth_user_id = uuid4()
+        email = f"{role}-{auth_user_id}@example.com"
         user = User(
-            email=f"{role}-{uuid4()}@example.com",
-            hashed_password="not-used-by-this-fixture",
+            auth_user_id=auth_user_id,
+            email=email,
+            full_name=f"Test {role.title()}",
         )
         company = Company(name=f"Test company for {role}")
         async with AsyncSessionLocal() as session:
@@ -252,10 +283,17 @@ async def actor_factory() -> Callable[[Literal["owner", "accountant", "viewer"]]
             )
             await session.commit()
 
-        token = create_access_token(user.id)
+        token = str(uuid4())
+        TEST_TOKEN_CLAIMS[token] = {
+            "sub": str(auth_user_id),
+            "email": email,
+            "email_verified": True,
+            "user_metadata": {"full_name": f"Test {role.title()}", "email_verified": True},
+        }
         return TestActor(
             user_id=user.id,
             company_id=company.id,
+            email=email,
             role=role,
             headers={"Authorization": f"Bearer {token}"},
         )

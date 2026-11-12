@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     digest_smtp_password: SecretStr | None = None
     digest_smtp_starttls: bool = True
     digest_email_from: EmailStr | None = None
+    supabase_url: str | None = None
+    supabase_jwt_secret: SecretStr | None = None
+    app_public_url: str = "http://127.0.0.1:5173"
+    smtp_host: str | None = None
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_user: str | None = None
+    smtp_password: SecretStr | None = None
+    smtp_from: EmailStr | None = None
 
     @model_validator(mode="after")
     def smtp_credentials_must_be_paired(self) -> "Settings":
@@ -31,6 +39,8 @@ class Settings(BaseSettings):
             raise ValueError(
                 "DIGEST_SMTP_USERNAME and DIGEST_SMTP_PASSWORD must be configured together"
             )
+        if bool(self.smtp_user) != bool(self.smtp_password):
+            raise ValueError("SMTP_USER and SMTP_PASSWORD must be configured together")
         return self
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

@@ -2,7 +2,9 @@ import type { components } from "../../api/schema";
 import { api } from "../../api/client";
 import { normalizeApiError } from "../../api/errors";
 
-export type CompanyMembership = components["schemas"]["CompanyMembershipRead"];
+export type CompanyMembership = Omit<components["schemas"]["CompanyMembershipRead"], "permissions"> & {
+  permissions?: string[];
+};
 export type Company = components["schemas"]["CompanyRead"];
 
 export async function listCompanies(): Promise<CompanyMembership[]> {
@@ -32,5 +34,15 @@ export async function setCompanyCurrency(
   });
   if (!result.response.ok) throw await normalizeApiError(result.response, result.error);
   if (!result.data) throw new Error("The server returned no company.");
+  return result.data;
+}
+
+export async function updateCompanyName(companyId: string, name: string): Promise<Company> {
+  const result = await api.PATCH("/api/v1/companies/{company_id}", {
+    params: { path: { company_id: companyId } },
+    body: { name },
+  });
+  if (!result.response.ok) throw await normalizeApiError(result.response, result.error);
+  if (!result.data) throw new Error("The server returned no updated company.");
   return result.data;
 }

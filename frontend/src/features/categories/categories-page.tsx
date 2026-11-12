@@ -150,6 +150,6 @@ function CompanyCategories({ companyId, canWrite }: { companyId: string; canWrit
 
 export function CategoriesPage() {
   const company = useCompany();
-  const { canWrite } = useRole();
+  const { canManageCategories: canWrite } = useRole();
   return <CompanyCategories canWrite={canWrite} companyId={company.company_id} key={company.company_id} />;
 }

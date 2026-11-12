@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { AppRoutes } from "../../app/app";
 import { AuthProvider } from "../../app/auth-context";
 import { queryClient } from "../../app/query-client";
-import { setAccessToken } from "../../lib/auth-token";
+import { setAuthSession } from "../../test/auth-session";
 import { formatMoney } from "../../lib/money";
 import { server } from "../../test/server";
 import type { CompanyMembership } from "./api";
@@ -16,6 +16,8 @@ import type { CompanyMembership } from "./api";
 const user = {
   id: "user-1",
   email: "member@example.com",
+  full_name: "Company Member",
+  avatar_url: null,
   created_at: "2026-11-05T12:00:00Z",
 };
 
@@ -25,6 +27,7 @@ const workspaceA: CompanyMembership = {
   currency_code: null,
   created_at: "2026-10-01T12:00:00Z",
   role: "viewer",
+  permissions: [],
 };
 
 const workspaceB: CompanyMembership = {
@@ -33,10 +36,11 @@ const workspaceB: CompanyMembership = {
   currency_code: "USD",
   created_at: "2026-10-02T12:00:00Z",
   role: "accountant",
+  permissions: [],
 };
 
 function renderAt(path: string) {
-  setAccessToken("test-session-token");
+  setAuthSession("test-session-token");
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[path]}>
@@ -52,6 +56,9 @@ function mockMemberships(memberships: CompanyMembership[]) {
   server.use(
     http.get("*/api/v1/auth/me", () => HttpResponse.json(user)),
     http.get("*/api/v1/companies", () => HttpResponse.json(memberships)),
+    http.get("*/api/v1/companies/:companyId/metrics/documents", () =>
+      HttpResponse.json({ total: 1, processing: 0, awaiting_review: 0, confirmed: 1, failed: 0 }),
+    ),
     http.get("*/api/v1/companies/:companyId/metrics/cash-flow", ({ params }) => {
       const inflows = params.companyId === "company-a" ? "100.00" : "900.00";
       return HttpResponse.json({
@@ -94,19 +101,19 @@ describe("company workspace shell", () => {
     expect(
       await screen.findByRole(
         "heading",
-        { name: "Welcome to Northstar Studio" },
+        { name: "Cash-flow period" },
         { timeout: 5000 },
       ),
     ).toBeInTheDocument();
     expect(await screen.findAllByText(formatMoney("100.00", null))).not.toHaveLength(0);
-    expect(screen.getAllByText("viewer").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Viewer").length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("ISO 4217 currency code")).not.toBeInTheDocument();
 
     await browser.selectOptions(screen.getByLabelText("Switch company"), "company-b");
-    expect(await screen.findByRole("heading", { name: "Welcome to Paper Birch Co." })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Cash-flow period" })).toBeInTheDocument();
     expect(await screen.findAllByText(formatMoney("900.00", "USD"))).not.toHaveLength(0);
     expect(screen.queryByText(formatMoney("100.00", null))).not.toBeInTheDocument();
-    expect(screen.getAllByText("accountant").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Admin").length).toBeGreaterThan(0);
     expect(screen.getByText("USD")).toBeInTheDocument();
   });
 

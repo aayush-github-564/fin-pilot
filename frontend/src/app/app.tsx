@@ -16,8 +16,26 @@ const LoginPage = lazy(() =>
 const RegisterPage = lazy(() =>
   import("../features/auth/register-page").then((module) => ({ default: module.RegisterPage })),
 );
+const VerifyEmailPage = lazy(() =>
+  import("../features/auth/verify-email-page").then((module) => ({ default: module.VerifyEmailPage })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import("../features/auth/forgot-password-page").then((module) => ({ default: module.ForgotPasswordPage })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("../features/auth/reset-password-page").then((module) => ({ default: module.ResetPasswordPage })),
+);
+const AuthCallbackPage = lazy(() =>
+  import("../features/auth/auth-callback-page").then((module) => ({ default: module.AuthCallbackPage })),
+);
 const CompanySettingsPage = lazy(() =>
   import("../features/companies/company-settings-page").then((module) => ({ default: module.CompanySettingsPage })),
+);
+const MembersPage = lazy(() =>
+  import("../features/companies/members-page").then((module) => ({ default: module.MembersPage })),
+);
+const InvitePage = lazy(() =>
+  import("../features/companies/invite-page").then((module) => ({ default: module.InvitePage })),
 );
 const DashboardPage = lazy(() =>
   import("../features/dashboard/dashboard-page").then((module) => ({ default: module.DashboardPage })),
@@ -58,6 +76,11 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomeRedirect />} />
+      <Route path="/verify-email" element={<LoadPage><VerifyEmailPage /></LoadPage>} />
+      <Route path="/forgot-password" element={<LoadPage><ForgotPasswordPage /></LoadPage>} />
+      <Route path="/reset-password" element={<LoadPage><ResetPasswordPage /></LoadPage>} />
+      <Route path="/auth/callback" element={<LoadPage><AuthCallbackPage /></LoadPage>} />
+      <Route path="/invite/:token" element={<LoadPage><InvitePage /></LoadPage>} />
       <Route
         path="/login"
         element={
@@ -110,6 +133,7 @@ export function AppRoutes() {
         <Route path="budgets" element={<LoadPage><BudgetsPage /></LoadPage>} />
         <Route path="categories" element={<LoadPage><CategoriesPage /></LoadPage>} />
         <Route path="settings" element={<LoadPage><CompanySettingsPage /></LoadPage>} />
+        <Route path="members" element={<LoadPage><MembersPage /></LoadPage>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

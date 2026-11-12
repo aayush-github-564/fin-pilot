@@ -70,6 +70,33 @@ async def _add_budget(
         await session.commit()
 
 
+async def _add_invoice(
+    company_id: UUID,
+    processing_status: str,
+    *,
+    confirmed: bool = False,
+) -> UUID:
+    from datetime import UTC, datetime
+
+    from app.core.db import AsyncSessionLocal
+    from app.models import Invoice, InvoiceStatus, ProcessingStatus
+
+    async with AsyncSessionLocal() as session:
+        invoice = Invoice(
+            company_id=company_id,
+            direction="purchase" if confirmed else None,
+            vendor="Test vendor" if confirmed else None,
+            amount=Decimal("25.00") if confirmed else None,
+            date=date(2026, 1, 1) if confirmed else None,
+            status=InvoiceStatus.pending,
+            processing_status=ProcessingStatus(processing_status),
+            confirmed_at=datetime.now(UTC) if confirmed else None,
+        )
+        session.add(invoice)
+        await session.commit()
+        return invoice.id
+
+
 async def test_cash_flow_metrics_are_inclusive_bucketed_and_company_scoped(
     async_client: AsyncClient, actor_factory: Any
 ) -> None:
@@ -177,6 +204,47 @@ async def test_non_member_cannot_read_cash_flow_metrics(
 
     response = await async_client.get(
         f"/api/v1/companies/{owner.company_id}/metrics/cash-flow",
+        headers=other_owner.headers,
+    )
+
+    assert response.status_code == 403
+
+
+async def test_invoice_document_counts_are_aggregated_and_company_scoped(
+    async_client: AsyncClient, actor_factory: Any
+) -> None:
+    owner = await actor_factory("owner")
+    other_owner = await actor_factory("owner")
+    await _add_invoice(owner.company_id, "pending")
+    await _add_invoice(owner.company_id, "processing")
+    await _add_invoice(owner.company_id, "complete")
+    await _add_invoice(owner.company_id, "complete", confirmed=True)
+    await _add_invoice(owner.company_id, "failed")
+    await _add_invoice(other_owner.company_id, "complete")
+
+    response = await async_client.get(
+        f"/api/v1/companies/{owner.company_id}/metrics/documents",
+        headers=owner.headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total": 5,
+        "processing": 2,
+        "awaiting_review": 1,
+        "confirmed": 1,
+        "failed": 1,
+    }
+
+
+async def test_non_member_cannot_read_invoice_document_counts(
+    async_client: AsyncClient, actor_factory: Any
+) -> None:
+    owner = await actor_factory("owner")
+    other_owner = await actor_factory("owner")
+
+    response = await async_client.get(
+        f"/api/v1/companies/{owner.company_id}/metrics/documents",
         headers=other_owner.headers,
     )
 

@@ -34,6 +34,7 @@ class CompanyMembershipRead(BaseModel):
     currency_code: str | None
     created_at: datetime
     role: CompanyRole
+    permissions: list[str]
 
 
 class CompanyUpdate(BaseModel):

@@ -41,6 +41,60 @@ async def test_viewer_cannot_create_financial_resources(
     assert response.status_code == 403
 
 
+async def test_member_can_upload_invoice_and_categorize_but_not_manage_transactions(
+    async_client: AsyncClient, actor_factory: Any
+) -> None:
+    from datetime import date
+    from decimal import Decimal
+
+    from app.core.db import AsyncSessionLocal
+    from app.models import Category, Transaction, TransactionSource
+
+    member = await actor_factory("member")
+    invoice = await async_client.post(
+        f"/api/v1/companies/{member.company_id}/invoices",
+        headers=member.headers,
+        json={
+            "direction": "purchase",
+            "vendor": "Stationery",
+            "amount": "28.50",
+            "date": "2026-11-01",
+        },
+    )
+    assert invoice.status_code == 201
+
+    async with AsyncSessionLocal() as session:
+        category = Category(company_id=member.company_id, name="Office supplies")
+        session.add(category)
+        await session.flush()
+        transaction = Transaction(
+            company_id=member.company_id,
+            date=date(2026, 11, 1),
+            amount=Decimal("-28.50"),
+            description="Stationery",
+            source=TransactionSource.manual,
+        )
+        session.add(transaction)
+        await session.commit()
+        category_id = category.id
+        transaction_id = transaction.id
+
+    categorized = await async_client.patch(
+        f"/api/v1/companies/{member.company_id}/transactions/{transaction_id}",
+        headers=member.headers,
+        json={"category_id": str(category_id)},
+    )
+    created_transaction = await async_client.post(
+        f"/api/v1/companies/{member.company_id}/transactions",
+        headers=member.headers,
+        json={"date": "2026-11-02", "amount": "-2.00", "description": "Other"},
+    )
+
+    assert categorized.status_code == 200
+    assert categorized.json()["category_id"] == str(category_id)
+    assert created_transaction.status_code == 403
+
+
 async def test_transaction_rejects_another_company_category(
     async_client: AsyncClient, actor_factory: Any
 ) -> None:

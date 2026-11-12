@@ -8,6 +8,14 @@ from pydantic import BaseModel
 from app.models.category import CategoryKind
 
 
+class InvoiceDocumentCountsRead(BaseModel):
+    total: int
+    processing: int
+    awaiting_review: int
+    confirmed: int
+    failed: int
+
+
 class CashFlowBucketRead(BaseModel):
     period_start: date
     inflows: Decimal

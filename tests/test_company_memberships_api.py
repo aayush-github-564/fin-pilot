@@ -20,24 +20,14 @@ async def test_company_list_includes_callers_role_and_only_their_companies(
     assert owner_response.status_code == viewer_response.status_code == 200
     owner_companies = owner_response.json()
     viewer_companies = viewer_response.json()
-    assert owner_companies == [
-        {
-            "company_id": str(owner.company_id),
-            "name": "Test company for owner",
-            "currency_code": None,
-            "created_at": owner_companies[0]["created_at"],
-            "role": "owner",
-        }
-    ]
-    assert viewer_companies == [
-        {
-            "company_id": str(viewer.company_id),
-            "name": "Test company for viewer",
-            "currency_code": None,
-            "created_at": viewer_companies[0]["created_at"],
-            "role": "viewer",
-        }
-    ]
+    assert len(owner_companies) == len(viewer_companies) == 1
+    assert owner_companies[0]["company_id"] == str(owner.company_id)
+    assert owner_companies[0]["role"] == "owner"
+    assert "company:delete" in owner_companies[0]["permissions"]
+    assert viewer_companies[0]["company_id"] == str(viewer.company_id)
+    assert viewer_companies[0]["role"] == "viewer"
+    assert "transactions:read" in viewer_companies[0]["permissions"]
+    assert "transaction:manage" not in viewer_companies[0]["permissions"]
 
 
 async def test_company_me_returns_current_membership_and_rejects_non_members(

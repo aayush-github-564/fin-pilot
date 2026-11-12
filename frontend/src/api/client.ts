@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch";
 
-import { clearAccessToken, getAccessToken } from "../lib/auth-token";
+import { supabase } from "../lib/supabase";
 import type { paths } from "./schema";
 
 const apiOrigin = typeof window === "undefined" ? "" : window.location.origin;
@@ -10,16 +10,16 @@ export const api = createClient<paths>({
 });
 
 api.use({
-  onRequest({ request }) {
-    const token = getAccessToken();
-    if (token) request.headers.set("Authorization", `Bearer ${token}`);
+  async onRequest({ request }) {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) {
+      request.headers.set("Authorization", `Bearer ${data.session.access_token}`);
+    }
     request.headers.set("Accept", "application/json");
     return request;
   },
-  onResponse({ request, response }) {
-    const isLoginRequest = request.url.endsWith("/api/v1/auth/login");
-    if (response.status === 401 && !isLoginRequest) {
-      clearAccessToken();
+  onResponse({ response }) {
+    if (response.status === 401) {
       window.dispatchEvent(new Event("finpilot:unauthorized"));
     }
     return response;

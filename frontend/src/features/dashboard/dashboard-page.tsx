@@ -15,8 +15,9 @@ import {
   Clock3,
   Wallet,
 } from "lucide-react";
-import { lazy, Suspense, useState, type FormEvent, type ReactNode } from "react";
+import { lazy, Suspense, useState, type DragEvent, type FormEvent, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { ApiError } from "../../api/errors";
@@ -27,8 +28,10 @@ import { ErrorMessage, LoadingState } from "../../components/ui/feedback";
 import { Input } from "../../components/ui/input";
 import { formatMoney, formatRunwayMonths } from "../../lib/money";
 import { useCompany, useRole } from "../companies/company-context";
-import { useBudgetVsActual, useCashFlowMetrics } from "../metrics/hooks";
+import { useBudgetVsActual, useCashFlowMetrics, useInvoiceDocumentCounts } from "../metrics/hooks";
 import { useRecentTransactions, useReviewQueueCount } from "../transactions/hooks";
+import { InvoiceUploadTrigger } from "../invoices/upload-trigger";
+import { useInvoiceUploadTrigger } from "../invoices/use-invoice-upload-trigger";
 
 const CashFlowChart = lazy(() =>
   import("./cash-flow-chart").then((module) => ({ default: module.CashFlowChart })),
@@ -153,7 +156,7 @@ function CashFlowRangeControls({
               Cash-flow period
             </CardTitle>
             <CardDescription className="mt-1">
-              Choose up to 366 calendar days. Values are computed by the metrics service.
+              Choose up to 366 calendar days to explore cash flow over time.
             </CardDescription>
           </div>
           <div aria-label="Cash-flow chart grouping" className="inline-flex rounded-md bg-linen p-1" role="group">
@@ -243,7 +246,7 @@ function CashFlowRangeControls({
           </div>
           <Button size="sm" type="submit" variant="secondary">Update runway estimate</Button>
           <p className="text-xs leading-5 text-muted sm:col-span-2">
-            This balance is sent only with the metrics request and is not saved to company records.
+            Your cash balance helps estimate runway and is not saved to company records.
           </p>
         </form>
       </CardHeader>
@@ -374,7 +377,7 @@ function RecentTransactions({
     <Card className="min-w-0">
       <CardHeader>
         <CardTitle>Recent transactions</CardTitle>
-        <CardDescription className="mt-1">The five latest records in this company.</CardDescription>
+        <CardDescription className="mt-1">A look at the latest money in and out.</CardDescription>
         {isPending || isError ? (
           <QueryStatus
             error={error}
@@ -413,9 +416,69 @@ function RecentTransactions({
   );
 }
 
+function DashboardUploadBar({ canWrite }: { canWrite: boolean }) {
+  const openUpload = useInvoiceUploadTrigger();
+  const [dragActive, setDragActive] = useState(false);
+
+  if (!canWrite) {
+    return <p className="text-sm text-muted">Ask an Owner or Admin to upload an invoice.</p>;
+  }
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    const file = event.dataTransfer.files.item(0);
+    if (file) openUpload(file);
+  };
+
+  return (
+    <div
+      aria-label="Drop an invoice to upload it"
+      className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors ${dragActive ? "border-accent bg-surface-raised" : "border-border bg-surface"}`}
+      onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
+      onDragLeave={(event) => { event.preventDefault(); setDragActive(false); }}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={handleDrop}
+      role="region"
+    >
+      <p className="text-sm font-semibold text-foreground-body">Drop an invoice here or upload one to add it to your review list.</p>
+      <InvoiceUploadTrigger variant="secondary" />
+    </div>
+  );
+}
+
+function DashboardWelcome({ company, roleLabel }: {
+  company: ReturnType<typeof useCompany>;
+  roleLabel: string;
+}) {
+  return (
+    <section className="rounded-xl bg-dark-bg px-6 py-7 text-dark-text sm:px-9 sm:py-9">
+      <div className="flex flex-wrap items-start justify-between gap-5">
+        <div className="max-w-2xl">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="border border-dark-border bg-dark-surface text-dark-accent" variant="neutral">Company overview</Badge>
+            <Badge className="border border-dark-border bg-dark-bg text-dark-text-muted" variant="neutral">{roleLabel}</Badge>
+          </div>
+          <h1 className="fp-page-title fp-page-title--dark mt-4">Welcome to <em>{company.name}</em></h1>
+          <p className="mt-2 text-sm leading-6 text-dark-text-muted">
+            Track money in, money out, and your estimated runway at a glance.
+          </p>
+        </div>
+        <div className="rounded-lg border border-dark-border bg-dark-surface px-4 py-3 text-sm text-dark-text-muted">
+          <p className="fp-label fp-label--dark-muted">Accounting currency</p>
+          <p className="mt-1 font-semibold text-dark-text">{company.currency_code ?? "Owner setup needed"}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function DashboardPage() {
   const company = useCompany();
-  const { role } = useRole();
+  const { roleLabel, canReviewInvoices, canUploadInvoices } = useRole();
+  const navigate = useNavigate();
+  const documentCountsQuery = useInvoiceDocumentCounts(company.company_id);
+  const showFullDashboard = (documentCountsQuery.data?.confirmed ?? 0) > 0;
   const [range, setRange] = useState(() => presetRange(90));
   const [draftRange, setDraftRange] = useState(range);
   const [activePreset, setActivePreset] = useState<number | null>(90);
@@ -433,10 +496,10 @@ export function DashboardPage() {
     end_date: range.end_date,
     granularity,
     ...(cashBalance ? { cash_balance: cashBalance } : {}),
-  });
-  const budgetQuery = useBudgetVsActual(company.company_id, period);
-  const recentQuery = useRecentTransactions(company.company_id);
-  const reviewCountQuery = useReviewQueueCount(company.company_id);
+  }, showFullDashboard);
+  const budgetQuery = useBudgetVsActual(company.company_id, period, showFullDashboard);
+  const recentQuery = useRecentTransactions(company.company_id, showFullDashboard);
+  const reviewCountQuery = useReviewQueueCount(company.company_id, showFullDashboard);
 
   function choosePreset(days: (typeof PRESET_DAYS)[number]) {
     const nextRange = presetRange(days);
@@ -477,6 +540,88 @@ export function DashboardPage() {
     })(event);
   }
 
+  if (documentCountsQuery.isPending) {
+    return <LoadingState label="Checking your invoices" />;
+  }
+  if (documentCountsQuery.isError || !documentCountsQuery.data) {
+    return (
+      <div className="space-y-3">
+        <ErrorMessage>{queryError(documentCountsQuery.error)}</ErrorMessage>
+        <Button onClick={() => void documentCountsQuery.refetch()} variant="secondary">Try again</Button>
+      </div>
+    );
+  }
+
+  const counts = documentCountsQuery.data;
+  if (counts.confirmed === 0) {
+    if (counts.total === 0) {
+      return (
+        <section className="rounded-xl bg-dark-bg px-6 py-7 text-dark-text sm:px-9 sm:py-9">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="border border-dark-border bg-dark-surface text-dark-text" variant="neutral">{company.name}</Badge>
+              <Badge className="border border-dark-border bg-dark-bg text-dark-text-muted" variant="neutral">{roleLabel}</Badge>
+              </div>
+              <h1 className="fp-page-title fp-page-title--dark mt-4">Upload an invoice to get started</h1>
+              <p className="mt-2 text-sm leading-6 text-dark-text-muted">
+                FinPilot reads it, you confirm the details, and your dashboard fills in.
+              </p>
+              {canUploadInvoices ? (
+                <div className="mt-5"><InvoiceUploadTrigger className="bg-paper text-pine hover:bg-linen" /></div>
+              ) : (
+                <p className="mt-5 text-sm text-dark-text-muted">Ask an Owner or Admin to upload an invoice.</p>
+              )}
+            </div>
+            <div className="rounded-lg border border-dark-border bg-dark-surface px-4 py-3 text-sm text-dark-text-muted">
+              <p className="fp-label fp-label--dark-muted">Accounting currency</p>
+              <p className="mt-1 font-semibold text-dark-text">{company.currency_code ?? "Owner setup needed"}</p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    const nextAction = counts.awaiting_review > 0
+      ? "review"
+      : counts.processing > 0
+        ? "processing"
+        : "failed";
+
+    return (
+      <div className="space-y-4">
+        <p className="fp-eyebrow">{company.name} · {roleLabel} · {company.currency_code ?? "Currency setup needed"}</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {nextAction === "review"
+                ? "Confirm your first invoice"
+                : nextAction === "processing"
+                  ? "FinPilot is reading your invoice"
+                  : "Your invoice could not be read"}
+            </CardTitle>
+            <CardDescription className="mt-1">
+              {nextAction === "review"
+                ? "Check the extracted details and confirm them to fill in your dashboard."
+                : nextAction === "processing"
+                  ? "Your dashboard will fill in after you review and confirm the extracted details."
+                  : "Upload it again, or enter the details manually from the invoice list."}
+            </CardDescription>
+            {nextAction === "processing" && !canUploadInvoices && (
+              <p className="mt-4 text-sm text-muted">Ask an Owner or Admin to upload invoices for you.</p>
+            )}
+            {nextAction === "review" && (canReviewInvoices
+              ? <Button className="mt-4" onClick={() => navigate(`/c/${company.company_id}/invoices`)} type="button">Review first invoice</Button>
+              : <p className="mt-4 text-sm text-muted">Ask an Owner or Admin to confirm the invoice.</p>)}
+            {nextAction === "failed" && (canUploadInvoices
+              ? <div className="mt-4"><InvoiceUploadTrigger label="Upload again" /></div>
+              : <p className="mt-4 text-sm text-muted">Ask an Owner or Admin to upload the invoice again.</p>)}
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   const metrics = metricsQuery.data;
   const burn = metrics ? Number(metrics.average_monthly_net_burn) : 0;
   const burnValue = metrics
@@ -489,24 +634,8 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-xl bg-dark-bg px-6 py-7 text-dark-text sm:px-9 sm:py-9">
-        <div className="relative flex flex-wrap items-start justify-between gap-5">
-          <div className="max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border border-dark-border bg-dark-surface text-dark-accent" variant="neutral">Company overview</Badge>
-              <Badge className="border border-dark-border bg-dark-bg text-dark-text-muted" variant="neutral">{role}</Badge>
-            </div>
-            <h1 className="fp-page-title fp-page-title--dark mt-4">Welcome to <em>{company.name}</em></h1>
-            <p className="mt-2 text-sm leading-6 text-dark-text-muted">
-              Financial totals and runway are supplied by FinPilot's company-scoped metrics service.
-            </p>
-          </div>
-          <div className="relative rounded-lg border border-dark-border bg-dark-surface px-4 py-3 text-sm text-dark-text-muted">
-            <p className="fp-label fp-label--dark-muted">Accounting currency</p>
-            <p className="mt-1 font-semibold text-dark-text">{company.currency_code ?? "Owner setup needed"}</p>
-          </div>
-        </div>
-      </section>
+      <DashboardUploadBar canWrite={canUploadInvoices} />
+      <DashboardWelcome company={company} roleLabel={roleLabel} />
 
       <CashFlowRangeControls
         activePreset={activePreset}
@@ -533,7 +662,7 @@ export function DashboardPage() {
             <QueryStatus error={metricsQuery.error} isError={metricsQuery.isError} isPending={metricsQuery.isPending} label="Loading outflows" onRetry={() => void metricsQuery.refetch()} />
           ) : formatMoney(metricsQuery.data.total_outflows, company.currency_code)}
         </MetricCard>
-        <MetricCard detail="Returned directly by the metrics service" icon={<Activity aria-hidden="true" className="size-5" />} title="Net cash flow">
+        <MetricCard detail="Inflow minus outflow for the selected period" icon={<Activity aria-hidden="true" className="size-5" />} title="Net cash flow">
           {metricsQuery.isPending || metricsQuery.isError ? (
             <QueryStatus error={metricsQuery.error} isError={metricsQuery.isError} isPending={metricsQuery.isPending} label="Loading net cash flow" onRetry={() => void metricsQuery.refetch()} />
           ) : formatMoney(metricsQuery.data.net_cash_flow, company.currency_code)}

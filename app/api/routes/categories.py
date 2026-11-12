@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_company_member, get_db, require_role
+from app.api.deps import get_current_company_member, get_db, require_permission
+from app.core.permissions import Permission
 from app.models.category import Category
 from app.models.company_member import CompanyMember
 from app.models.transaction import Transaction
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/companies/{company_id}/categories", tags=["categorie
 async def create_category(
     company_id: uuid.UUID,
     payload: CategoryCreate,
-    membership: CompanyMember = Depends(require_role("owner", "accountant")),
+    membership: CompanyMember = Depends(require_permission(Permission.categories_manage)),
     db: AsyncSession = Depends(get_db),
 ):
     if payload.parent_category_id is not None:
@@ -75,7 +76,7 @@ async def update_category(
     company_id: uuid.UUID,
     payload: CategoryUpdate,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.categories_manage)),
 ):
     result = await db.execute(
         select(Category).where(
@@ -147,7 +148,7 @@ async def delete_category(
     category_id: uuid.UUID,
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.categories_manage)),
 ):
     result = await db.execute(
         select(Category).where(

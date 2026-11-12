@@ -23,8 +23,10 @@ from app.api.deps import (
     get_arq_redis,
     get_current_company_member,
     get_db,
-    require_role,
+    require_any_permission,
+    require_permission,
 )
+from app.core.permissions import Permission, ROLE_PERMISSIONS
 from app.models.category import Category, CategoryKind
 from app.models.company_member import CompanyMember
 from app.models.transaction import (
@@ -82,7 +84,7 @@ async def create_transaction(
     company_id: uuid.UUID,
     payload: TransactionCreate,
     request: Request,
-    membership: CompanyMember = Depends(require_role("owner", "accountant")),
+    membership: CompanyMember = Depends(require_permission(Permission.transaction_manage)),
     db: AsyncSession = Depends(get_db),
     redis: ArqRedis = Depends(get_arq_redis),
 ):
@@ -227,7 +229,7 @@ async def import_transactions_csv(
     company_id: uuid.UUID,
     request: Request,
     file: UploadFile = File(...),
-    membership: CompanyMember = Depends(require_role("owner", "accountant")),
+    membership: CompanyMember = Depends(require_permission(Permission.transaction_manage)),
     db: AsyncSession = Depends(get_db),
     redis: ArqRedis = Depends(get_arq_redis),
 ) -> CSVImportRead:
@@ -471,7 +473,7 @@ async def accept_transaction_suggestion(
     transaction_id: UUID,
     company_id: UUID,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.transaction_categorize)),
 ):
     result = await db.execute(
         select(Transaction).where(
@@ -553,7 +555,7 @@ async def update_transaction(
     payload: TransactionUpdate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_any_permission(Permission.transaction_manage, Permission.transaction_categorize)),
     redis: ArqRedis = Depends(get_arq_redis),
 ):
     result = await db.execute(
@@ -566,6 +568,11 @@ async def update_transaction(
         raise HTTPException(status_code=404, detail="Transaction not found")
 
     changes = payload.model_dump(exclude_unset=True)
+    if (
+        Permission.transaction_manage not in ROLE_PERMISSIONS[member.role]
+        and (set(changes) != {"category_id"} or changes["category_id"] is None)
+    ):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit this transaction")
     if any(field in changes and changes[field] is None for field in ("date", "amount")):
         raise HTTPException(status_code=422, detail="Date and amount cannot be null")
 
@@ -624,7 +631,7 @@ async def delete_transaction(
     transaction_id: UUID,
     company_id: UUID,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner", "accountant")),
+    member: CompanyMember = Depends(require_permission(Permission.transaction_manage)),
 ):
     result = await db.execute(
         select(Transaction).where(

@@ -4,67 +4,68 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useSyncExternalStore,
+  useState,
   type ReactNode,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import {
-  clearAccessToken,
-  getAccessToken,
-  setAccessToken,
-  subscribeToAccessToken,
-} from "../lib/auth-token";
+import { supabase } from "../lib/supabase";
 import { queryClient } from "./query-client";
 
 interface AuthContextValue {
-  token: string | null;
   isAuthenticated: boolean;
-  saveToken: (token: string) => void;
-  signOut: () => void;
+  isLoading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const token = useSyncExternalStore(
-    subscribeToAccessToken,
-    getAccessToken,
-    getAccessToken,
-  );
+  const [session, setSession] = useState<Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const saveToken = useCallback((nextToken: string) => {
-    setAccessToken(nextToken);
+  useEffect(() => {
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setSession(data.session);
+      setIsLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setIsLoading(false);
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const signOut = useCallback(() => {
-    clearAccessToken();
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
     queryClient.clear();
     navigate("/login", { replace: true });
   }, [navigate]);
 
   useEffect(() => {
-    function handleUnauthorized() {
+    async function handleUnauthorized() {
       const returnTo = `${location.pathname}${location.search}${location.hash}`;
-      clearAccessToken();
+      await supabase.auth.signOut();
       queryClient.clear();
       if (location.pathname !== "/login") {
         navigate(`/login?next=${encodeURIComponent(returnTo)}`, { replace: true });
       }
     }
-
     window.addEventListener("finpilot:unauthorized", handleUnauthorized);
-    return () =>
-      window.removeEventListener("finpilot:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("finpilot:unauthorized", handleUnauthorized);
   }, [location.hash, location.pathname, location.search, navigate]);
 
   const value = useMemo(
-    () => ({ token, isAuthenticated: token !== null, saveToken, signOut }),
-    [token, saveToken, signOut],
+    () => ({ isAuthenticated: session !== null, isLoading, signOut }),
+    [isLoading, session, signOut],
   );
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -16,6 +16,8 @@ import { Input } from "../../components/ui/input";
 import { useCurrentUser } from "../auth/hooks";
 import { createCompany, type CompanyMembership } from "./api";
 import { companiesQueryKey, useCompanies } from "./hooks";
+import { acceptMyInvitation } from "./members-api";
+import { myInvitationsQueryKey, useMyInvitations } from "./members-hooks";
 
 const createCompanySchema = z.object({
   name: z.string().trim().min(1, "Enter a company name."),
@@ -36,6 +38,7 @@ function companyPath(company: CompanyMembership): string {
 export function CompanyPickerPage() {
   const companies = useCompanies();
   const user = useCurrentUser();
+  const invitations = useMyInvitations();
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -48,6 +51,14 @@ export function CompanyPickerPage() {
     onSuccess: async (company) => {
       await queryClient.invalidateQueries({ queryKey: companiesQueryKey });
       navigate(`/c/${company.id}/dashboard`, { replace: true });
+    },
+  });
+  const acceptMutation = useMutation({
+    mutationFn: acceptMyInvitation,
+    onSuccess: async ({ company_id }) => {
+      await queryClient.invalidateQueries({ queryKey: companiesQueryKey });
+      await queryClient.invalidateQueries({ queryKey: myInvitationsQueryKey });
+      navigate(`/c/${company_id}/dashboard`, { replace: true });
     },
   });
 
@@ -126,6 +137,9 @@ export function CompanyPickerPage() {
             </Badge>
           </div>
 
+          {invitations.data && invitations.data.length > 0 && <Card className="mt-6"><CardHeader><CardTitle>Invitations for you</CardTitle><CardDescription>These invitations were sent to {user.data.email}.</CardDescription></CardHeader><div className="divide-y divide-line px-5 pb-5 sm:px-6">{invitations.data.map((invitation) => <div className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0" key={invitation.id}><div><p className="font-semibold text-foreground-body">{invitation.company_name}</p><p className="text-sm text-muted">Access: {invitation.role === "accountant" ? "Admin" : invitation.role[0]?.toUpperCase() + invitation.role.slice(1)}</p></div><Button disabled={acceptMutation.isPending} onClick={() => acceptMutation.mutate(invitation.id)} type="button">Accept</Button></div>)}</div></Card>}
+          {acceptMutation.isError && <div className="mt-4"><ErrorMessage>{acceptMutation.error instanceof Error ? acceptMutation.error.message : "The invitation could not be accepted."}</ErrorMessage></div>}
+
           {companies.data.length > 0 ? (
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
               {companies.data.map((company) => (
@@ -141,7 +155,7 @@ export function CompanyPickerPage() {
                           <Building2 aria-hidden="true" className="size-5" />
                         </span>
                         <Badge variant={company.role === "viewer" ? "neutral" : "info"}>
-                          {company.role}
+                          {company.role === "accountant" ? "Admin" : company.role === "owner" ? "Owner" : company.role === "member" ? "Member" : "Viewer"}
                         </Badge>
                       </div>
                       <CardTitle className="pt-3 text-lg">{company.name}</CardTitle>

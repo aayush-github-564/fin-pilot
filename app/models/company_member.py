@@ -12,6 +12,7 @@ from app.core.db import Base
 class CompanyRole(str, enum.Enum):
     owner = "owner"
     accountant = "accountant"
+    member = "member"
     viewer = "viewer"
 
 

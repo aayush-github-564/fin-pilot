@@ -161,6 +161,6 @@ function CompanyBudgets({ companyId, currency, canWrite }: { companyId: string; 
 
 export function BudgetsPage() {
   const company = useCompany();
-  const { canWrite } = useRole();
+  const { canManageBudgets: canWrite } = useRole();
   return <CompanyBudgets canWrite={canWrite} companyId={company.company_id} currency={company.currency_code} key={company.company_id} />;
 }

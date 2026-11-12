@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { CompanyProvider } from "../companies/company-context";
@@ -36,7 +37,7 @@ function invoice(overrides: Partial<Invoice> = {}): Invoice {
 
 function renderPage(role: CompanyMembership["role"] = "owner") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={queryClient}><CompanyProvider company={{ ...company, role }}><InvoicesPage /></CompanyProvider></QueryClientProvider>);
+  return render(<QueryClientProvider client={queryClient}><MemoryRouter><CompanyProvider company={{ ...company, role }}><InvoicesPage /></CompanyProvider></MemoryRouter></QueryClientProvider>);
 }
 
 describe("invoices page", () => {

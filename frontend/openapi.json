@@ -5,88 +5,6 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/api/v1/auth/register": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Register",
-        "operationId": "register_api_v1_auth_register_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/auth/login": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Login",
-        "operationId": "login_api_v1_auth_login_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_login_api_v1_auth_login_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Token"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/auth/me": {
       "get": {
         "tags": [
@@ -108,7 +26,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -138,7 +56,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       },
@@ -182,7 +100,7 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
@@ -196,7 +114,7 @@
         "operationId": "get_my_company_membership_api_v1_companies__company_id__me_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -244,7 +162,7 @@
         "operationId": "get_company_api_v1_companies__company_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -290,7 +208,7 @@
         "operationId": "update_company_api_v1_companies__company_id__patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -346,7 +264,7 @@
         "operationId": "delete_company_api_v1_companies__company_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -378,64 +296,6 @@
         }
       }
     },
-    "/api/v1/companies/{company_id}/invite": {
-      "post": {
-        "tags": [
-          "companies"
-        ],
-        "summary": "Invite Member",
-        "operationId": "invite_member_api_v1_companies__company_id__invite_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "company_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Company Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MemberInvite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemberOut"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/companies/{company_id}/categories": {
       "post": {
         "tags": [
@@ -445,7 +305,7 @@
         "operationId": "create_category_api_v1_companies__company_id__categories_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -501,7 +361,7 @@
         "operationId": "list_categories_api_v1_companies__company_id__categories_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -553,7 +413,7 @@
         "operationId": "get_category_api_v1_companies__company_id__categories__category_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -609,7 +469,7 @@
         "operationId": "update_category_api_v1_companies__company_id__categories__category_id__patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -675,7 +535,7 @@
         "operationId": "delete_category_api_v1_companies__company_id__categories__category_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -726,7 +586,7 @@
         "operationId": "create_transaction_api_v1_companies__company_id__transactions_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -782,7 +642,7 @@
         "operationId": "list_transactions_api_v1_companies__company_id__transactions_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -974,7 +834,7 @@
         "operationId": "list_transactions_for_review_api_v1_companies__company_id__transactions_review_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1049,7 +909,7 @@
         "operationId": "import_transactions_csv_api_v1_companies__company_id__transactions_import_csv_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1107,7 +967,7 @@
         "operationId": "accept_transaction_suggestion_api_v1_companies__company_id__transactions__transaction_id__accept_suggestion_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1165,7 +1025,7 @@
         "operationId": "get_transaction_api_v1_companies__company_id__transactions__transaction_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1221,7 +1081,7 @@
         "operationId": "update_transaction_api_v1_companies__company_id__transactions__transaction_id__patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1287,7 +1147,7 @@
         "operationId": "delete_transaction_api_v1_companies__company_id__transactions__transaction_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1338,7 +1198,7 @@
         "operationId": "create_invoice_api_v1_companies__company_id__invoices_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1394,7 +1254,7 @@
         "operationId": "list_invoices_api_v1_companies__company_id__invoices_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1470,7 +1330,7 @@
         "operationId": "upload_invoice_api_v1_companies__company_id__invoices_upload_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1528,7 +1388,7 @@
         "operationId": "get_invoice_api_v1_companies__company_id__invoices__invoice_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1584,7 +1444,7 @@
         "operationId": "update_invoice_api_v1_companies__company_id__invoices__invoice_id__patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1650,7 +1510,7 @@
         "operationId": "delete_invoice_api_v1_companies__company_id__invoices__invoice_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1701,7 +1561,7 @@
         "operationId": "download_invoice_file_api_v1_companies__company_id__invoices__invoice_id__download_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1757,7 +1617,7 @@
         "operationId": "confirm_invoice_api_v1_companies__company_id__invoices__invoice_id__confirm_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1815,7 +1675,7 @@
         "operationId": "create_budget_api_v1_companies__company_id__budgets_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1871,7 +1731,7 @@
         "operationId": "list_budgets_api_v1_companies__company_id__budgets_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1923,7 +1783,7 @@
         "operationId": "get_budget_api_v1_companies__company_id__budgets__budget_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1979,7 +1839,7 @@
         "operationId": "update_budget_api_v1_companies__company_id__budgets__budget_id__patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2045,7 +1905,7 @@
         "operationId": "delete_budget_api_v1_companies__company_id__budgets__budget_id__delete",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2087,6 +1947,54 @@
         }
       }
     },
+    "/api/v1/companies/{company_id}/metrics/documents": {
+      "get": {
+        "tags": [
+          "metrics"
+        ],
+        "summary": "Get Invoice Document Counts",
+        "operationId": "get_invoice_document_counts_api_v1_companies__company_id__metrics_documents_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDocumentCountsRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/companies/{company_id}/metrics/cash-flow": {
       "get": {
         "tags": [
@@ -2096,7 +2004,7 @@
         "operationId": "get_cash_flow_metrics_api_v1_companies__company_id__metrics_cash_flow_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2213,7 +2121,7 @@
         "operationId": "get_budget_vs_actual_api_v1_companies__company_id__metrics_budget_vs_actual_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2262,6 +2170,652 @@
         }
       }
     },
+    "/api/v1/companies/{company_id}/invitations": {
+      "post": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Create Invitation",
+        "operationId": "create_invitation_api_v1_companies__company_id__invitations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "List Invitations",
+        "operationId": "list_invitations_api_v1_companies__company_id__invitations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationRead"
+                  },
+                  "title": "Response List Invitations Api V1 Companies  Company Id  Invitations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{company_id}/invitations/{invitation_id}/resend": {
+      "post": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Resend Invitation",
+        "operationId": "resend_invitation_api_v1_companies__company_id__invitations__invitation_id__resend_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          },
+          {
+            "name": "invitation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invitation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{company_id}/invitations/{invitation_id}": {
+      "delete": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Revoke Invitation",
+        "operationId": "revoke_invitation_api_v1_companies__company_id__invitations__invitation_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          },
+          {
+            "name": "invitation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invitation Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invite/{token}": {
+      "get": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Preview Invitation",
+        "operationId": "preview_invitation_api_v1_invite__token__get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invite/{token}/accept": {
+      "post": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Accept Invitation",
+        "operationId": "accept_invitation_api_v1_invite__token__accept_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationAcceptRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitations/{invitation_id}/accept": {
+      "post": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Accept My Invitation",
+        "operationId": "accept_my_invitation_api_v1_invitations__invitation_id__accept_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invitation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invitation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationAcceptRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitations/mine": {
+      "get": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "List My Invitations",
+        "operationId": "list_my_invitations_api_v1_invitations_mine_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationRead"
+                  },
+                  "type": "array",
+                  "title": "Response List My Invitations Api V1 Invitations Mine Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/companies/{company_id}/members": {
+      "get": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "List Members",
+        "operationId": "list_members_api_v1_companies__company_id__members_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberRead"
+                  },
+                  "title": "Response List Members Api V1 Companies  Company Id  Members Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{company_id}/members/{user_id}": {
+      "patch": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Change Member Role",
+        "operationId": "change_member_role_api_v1_companies__company_id__members__user_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberRoleUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Remove Member",
+        "operationId": "remove_member_api_v1_companies__company_id__members__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{company_id}/members/me": {
+      "delete": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "Leave Company",
+        "operationId": "leave_company_api_v1_companies__company_id__members_me_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{company_id}/membership-events": {
+      "get": {
+        "tags": [
+          "memberships"
+        ],
+        "summary": "List Membership Events",
+        "operationId": "list_membership_events_api_v1_companies__company_id__membership_events_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MembershipEventRead"
+                  },
+                  "title": "Response List Membership Events Api V1 Companies  Company Id  Membership Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/companies/{company_id}/chat/query": {
       "post": {
         "tags": [
@@ -2271,7 +2825,7 @@
         "operationId": "ask_financial_question_api_v1_companies__company_id__chat_query_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2329,7 +2883,7 @@
         "operationId": "get_spending_anomalies_api_v1_companies__company_id__insights_anomalies_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2401,7 +2955,7 @@
         "operationId": "get_latest_weekly_digest_api_v1_companies__company_id__digests_weekly_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2489,65 +3043,6 @@
           "file"
         ],
         "title": "Body_import_transactions_csv_api_v1_companies__company_id__transactions_import_csv_post"
-      },
-      "Body_login_api_v1_auth_login_post": {
-        "properties": {
-          "grant_type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^password$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Grant Type"
-          },
-          "username": {
-            "type": "string",
-            "title": "Username"
-          },
-          "password": {
-            "type": "string",
-            "format": "password",
-            "title": "Password"
-          },
-          "scope": {
-            "type": "string",
-            "title": "Scope",
-            "default": ""
-          },
-          "client_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Client Id"
-          },
-          "client_secret": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "format": "password",
-            "title": "Client Secret"
-          }
-        },
-        "type": "object",
-        "required": [
-          "username",
-          "password"
-        ],
-        "title": "Body_login_api_v1_auth_login_post"
       },
       "Body_upload_invoice_api_v1_companies__company_id__invoices_upload_post": {
         "properties": {
@@ -3232,6 +3727,13 @@
           },
           "role": {
             "$ref": "#/components/schemas/CompanyRole"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions"
           }
         },
         "type": "object",
@@ -3240,7 +3742,8 @@
           "name",
           "currency_code",
           "created_at",
-          "role"
+          "role",
+          "permissions"
         ],
         "title": "CompanyMembershipRead"
       },
@@ -3286,6 +3789,7 @@
         "enum": [
           "owner",
           "accountant",
+          "member",
           "viewer"
         ],
         "title": "CompanyRole"
@@ -3426,6 +3930,240 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InvitationAcceptRead": {
+        "properties": {
+          "company_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Company Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole"
+          },
+          "already_member": {
+            "type": "boolean",
+            "title": "Already Member",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_id",
+          "role"
+        ],
+        "title": "InvitationAcceptRead"
+      },
+      "InvitationCreate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "role"
+        ],
+        "title": "InvitationCreate"
+      },
+      "InvitationCreated": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Company Id"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "invited_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited By Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "invite_url": {
+            "type": "string",
+            "title": "Invite Url"
+          },
+          "email_queued": {
+            "type": "boolean",
+            "title": "Email Queued"
+          },
+          "email_configured": {
+            "type": "boolean",
+            "title": "Email Configured"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "company_id",
+          "email",
+          "role",
+          "status",
+          "created_at",
+          "expires_at",
+          "invite_url",
+          "email_queued",
+          "email_configured"
+        ],
+        "title": "InvitationCreated"
+      },
+      "InvitationPreview": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole"
+          },
+          "inviter_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inviter Name"
+          },
+          "invited_email": {
+            "type": "string",
+            "format": "email",
+            "title": "Invited Email"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name",
+          "role",
+          "inviter_name",
+          "invited_email",
+          "status"
+        ],
+        "title": "InvitationPreview"
+      },
+      "InvitationRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "company_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Company Id"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "invited_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invited By Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "company_id",
+          "email",
+          "role",
+          "status",
+          "created_at",
+          "expires_at"
+        ],
+        "title": "InvitationRead"
+      },
       "InvoiceCreate": {
         "properties": {
           "direction": {
@@ -3473,6 +4211,39 @@
           "sale"
         ],
         "title": "InvoiceDirection"
+      },
+      "InvoiceDocumentCountsRead": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "processing": {
+            "type": "integer",
+            "title": "Processing"
+          },
+          "awaiting_review": {
+            "type": "integer",
+            "title": "Awaiting Review"
+          },
+          "confirmed": {
+            "type": "integer",
+            "title": "Confirmed"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "processing",
+          "awaiting_review",
+          "confirmed",
+          "failed"
+        ],
+        "title": "InvoiceDocumentCountsRead"
       },
       "InvoiceRead": {
         "properties": {
@@ -3639,8 +4410,24 @@
         "type": "object",
         "title": "InvoiceUpdate"
       },
-      "MemberInvite": {
+      "MemberRead": {
         "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
           "email": {
             "type": "string",
             "format": "email",
@@ -3648,44 +4435,118 @@
           },
           "role": {
             "$ref": "#/components/schemas/CompanyRole"
+          },
+          "joined_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Joined At"
           }
         },
         "type": "object",
         "required": [
+          "user_id",
+          "full_name",
           "email",
-          "role"
+          "role",
+          "joined_at"
         ],
-        "title": "MemberInvite"
+        "title": "MemberRead"
       },
-      "MemberOut": {
+      "MemberRoleUpdate": {
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "User Id"
-          },
-          "company_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Company Id"
-          },
           "role": {
             "$ref": "#/components/schemas/CompanyRole"
           }
         },
         "type": "object",
         "required": [
-          "id",
-          "user_id",
-          "company_id",
           "role"
         ],
-        "title": "MemberOut"
+        "title": "MemberRoleUpdate"
+      },
+      "MembershipEventRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "actor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Name"
+          },
+          "target_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Name"
+          },
+          "target_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Email"
+          },
+          "before_role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after_role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "actor_name",
+          "target_name",
+          "target_email",
+          "before_role",
+          "after_role",
+          "created_at"
+        ],
+        "title": "MembershipEventRead"
       },
       "SpendingAnomalyRead": {
         "properties": {
@@ -3844,24 +4705,6 @@
           "anomalies"
         ],
         "title": "SpendingAnomalyReportRead"
-      },
-      "Token": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "token_type": {
-            "type": "string",
-            "title": "Token Type",
-            "default": "bearer"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token"
-        ],
-        "title": "Token"
       },
       "TransactionCreate": {
         "properties": {
@@ -4119,25 +4962,6 @@
         "type": "object",
         "title": "TransactionUpdate"
       },
-      "UserCreate": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
-        "title": "UserCreate"
-      },
       "UserRead": {
         "properties": {
           "id": {
@@ -4150,6 +4974,28 @@
             "format": "email",
             "title": "Email"
           },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -4160,6 +5006,8 @@
         "required": [
           "id",
           "email",
+          "full_name",
+          "avatar_url",
           "created_at"
         ],
         "title": "UserRead"
@@ -4283,14 +5131,9 @@
       }
     },
     "securitySchemes": {
-      "OAuth2PasswordBearer": {
-        "type": "oauth2",
-        "flows": {
-          "password": {
-            "scopes": {},
-            "tokenUrl": "/api/v1/auth/login"
-          }
-        }
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }

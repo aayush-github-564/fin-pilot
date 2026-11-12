@@ -1,35 +1,53 @@
-from datetime import datetime, timedelta, timezone
-import uuid
+import asyncio
+from functools import lru_cache
+from uuid import UUID
 
-from jose import jwt, JWTError
-from passlib.context import CryptContext
+import jwt
+from jwt import PyJWKClient, PyJWTError
 
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def create_access_token(user_id: uuid.UUID) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.access_token_expire_minutes
+@lru_cache(maxsize=1)
+def _jwks_client() -> PyJWKClient:
+    if not settings.supabase_url:
+        raise RuntimeError("SUPABASE_URL is required to validate access tokens")
+    return PyJWKClient(
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json",
+        cache_keys=True,
+        lifespan=300,
+        timeout=5,
     )
-    payload = {"sub": str(user_id), "exp": expire}
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
-def decode_access_token(token: str) -> uuid.UUID | None:
+def _decode_supabase_token(token: str) -> dict[str, object]:
+    issuer = f"{(settings.supabase_url or '').rstrip('/')}/auth/v1"
+    header = jwt.get_unverified_header(token)
+    algorithm = header.get("alg")
+    if settings.supabase_jwt_secret is not None:
+        if algorithm != "HS256":
+            raise PyJWTError("Unsupported legacy JWT algorithm")
+        key = settings.supabase_jwt_secret.get_secret_value()
+    else:
+        if algorithm not in {"RS256", "ES256"}:
+            raise PyJWTError("Unsupported asymmetric JWT algorithm")
+        key = _jwks_client().get_signing_key_from_jwt(token).key
+
+    claims = jwt.decode(
+        token,
+        key,
+        algorithms=[algorithm],
+        audience="authenticated",
+        issuer=issuer,
+        options={"require": ["exp", "iss", "aud", "sub"]},
+    )
     try:
-        payload = jwt.decode(
-            token, settings.secret_key, algorithms=[settings.algorithm]
-        )
-        return uuid.UUID(payload["sub"])
-    except JWTError:
-        return None
+        UUID(claims["sub"])
+    except (ValueError, TypeError, KeyError) as error:
+        raise PyJWTError("Invalid subject") from error
+    if claims.get("role") != "authenticated":
+        raise PyJWTError("Token is not for an authenticated user")
+    return claims
+
+
+async def verify_supabase_access_token(token: str) -> dict[str, object]:
+    return await asyncio.to_thread(_decode_supabase_token, token)

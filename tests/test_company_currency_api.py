@@ -66,3 +66,30 @@ async def test_legacy_company_currency_must_be_a_current_iso_4217_code(
         json={"currency_code": "DEM"},
     )
     assert response.status_code == 422
+
+
+async def test_admin_can_edit_company_name_but_cannot_change_currency(
+    async_client: AsyncClient, actor_factory: Any
+) -> None:
+    from app.core.db import AsyncSessionLocal
+    from app.models import CompanyMember, CompanyRole
+
+    owner = await actor_factory("owner")
+    admin = await actor_factory("accountant")
+    async with AsyncSessionLocal() as session:
+        session.add(CompanyMember(user_id=admin.user_id, company_id=owner.company_id, role=CompanyRole.accountant))
+        await session.commit()
+
+    name_change = await async_client.patch(
+        f"/api/v1/companies/{owner.company_id}",
+        headers=admin.headers,
+        json={"name": "Managed by admin"},
+    )
+    currency_change = await async_client.patch(
+        f"/api/v1/companies/{owner.company_id}",
+        headers=admin.headers,
+        json={"currency_code": "USD"},
+    )
+
+    assert name_change.status_code == 200
+    assert currency_change.status_code == 403

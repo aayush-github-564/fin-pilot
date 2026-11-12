@@ -9,8 +9,9 @@ from app.api.deps import (
     get_current_company_member,
     get_current_user,
     get_db,
-    require_role,
+    require_permission,
 )
+from app.core.permissions import Permission, ROLE_PERMISSIONS, permissions_for_role
 from app.models.company import Company
 from app.models.company_member import CompanyMember, CompanyRole
 from app.models.user import User
@@ -19,8 +20,6 @@ from app.schemas.company import (
     CompanyMembershipRead,
     CompanyRead,
     CompanyUpdate,
-    MemberInvite,
-    MemberOut,
 )
 
 router = APIRouter(prefix="/companies", tags=["companies"])
@@ -72,6 +71,7 @@ async def list_my_companies(
             currency_code=row.currency_code,
             created_at=row.created_at,
             role=row.role,
+            permissions=permissions_for_role(row.role),
         )
         for row in result
     ]
@@ -91,6 +91,7 @@ async def get_my_company_membership(
         currency_code=company.currency_code,
         created_at=company.created_at,
         role=membership.role,
+        permissions=permissions_for_role(membership.role),
     )
 
 
@@ -109,7 +110,7 @@ async def update_company(
     company_id: UUID,
     payload: CompanyUpdate,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner")),
+    member: CompanyMember = Depends(require_permission(Permission.company_edit)),
 ):
     result = await db.execute(
         select(Company).where(Company.id == company_id).with_for_update()
@@ -120,6 +121,8 @@ async def update_company(
 
     changes = payload.model_dump(exclude_unset=True)
     if "currency_code" in changes:
+        if Permission.company_currency not in ROLE_PERMISSIONS[member.role]:
+            raise HTTPException(status_code=403, detail="Only an Owner can change accounting currency")
         new_currency = changes["currency_code"]
         if new_currency is None:
             raise HTTPException(status_code=422, detail="currency_code cannot be null")
@@ -140,7 +143,7 @@ async def update_company(
 async def delete_company(
     company_id: UUID,
     db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner")),
+    member: CompanyMember = Depends(require_permission(Permission.company_delete)),
 ):
     result = await db.execute(select(Company).where(Company.id == company_id))
     company = result.scalar_one_or_none()
@@ -150,35 +153,3 @@ async def delete_company(
     await db.delete(company)
     await db.commit()
     return None
-
-
-@router.post("/{company_id}/invite", response_model=MemberOut, status_code=201)
-async def invite_member(
-    company_id: UUID,
-    payload: MemberInvite,
-    db: AsyncSession = Depends(get_db),
-    member: CompanyMember = Depends(require_role("owner")),
-):
-    result = await db.execute(select(User).where(User.email == payload.email))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=404, detail="No user found with that email")
-
-    existing = await db.execute(
-        select(CompanyMember).where(
-            CompanyMember.company_id == company_id,
-            CompanyMember.user_id == user.id,
-        )
-    )
-    if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=409, detail="User is already a member of this company"
-        )
-
-    new_member = CompanyMember(
-        company_id=company_id, user_id=user.id, role=payload.role
-    )
-    db.add(new_member)
-    await db.commit()
-    await db.refresh(new_member)
-    return new_member

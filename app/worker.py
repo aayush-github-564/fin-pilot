@@ -1,7 +1,12 @@
+import asyncio
 import base64
 import datetime
+from email.message import EmailMessage
+from html import escape
 import json
 import logging
+import smtplib
+import ssl
 import time
 from dataclasses import dataclass
 from datetime import timedelta
@@ -983,6 +988,62 @@ async def sample_task(ctx, message: str):
     return f"processed: {message}"
 
 
+async def send_company_invitation(
+    ctx,
+    email: str,
+    company_name: str,
+    role: str,
+    inviter_name: str,
+    invite_url: str,
+) -> None:
+    """Send a company invitation from the worker, never in the API request."""
+    if not (settings.smtp_host and settings.smtp_from):
+        logger.info("Invitation email skipped because SMTP is not configured")
+        return
+
+    safe_company = escape(company_name)
+    safe_inviter = escape(inviter_name)
+    safe_role = escape(role.title())
+    safe_url = escape(invite_url, quote=True)
+    message = EmailMessage()
+    message["Subject"] = f"{inviter_name} invited you to {company_name} on FinPilot"
+    message["From"] = str(settings.smtp_from)
+    message["To"] = email
+    message.set_content(
+        f"{inviter_name} invited you to join {company_name} as {role.title()}.\n\n"
+        f"Accept the invitation: {invite_url}\n\n"
+        "This invitation expires in seven days. If you were not expecting it, you can ignore this email."
+    )
+    message.add_alternative(
+        "<!doctype html><html><body><main style='font-family:Arial,sans-serif;max-width:560px;margin:auto'>"
+        f"<p>{safe_inviter} invited you to join <strong>{safe_company}</strong> as {safe_role}.</p>"
+        f"<p><a href='{safe_url}'>Accept invitation</a></p>"
+        "<p>This invitation expires in seven days. If you were not expecting it, you can ignore this email.</p>"
+        "</main></body></html>",
+        subtype="html",
+    )
+
+    def send() -> None:
+        if settings.smtp_port == 465:
+            client = smtplib.SMTP_SSL(
+                settings.smtp_host,
+                settings.smtp_port,
+                timeout=20,
+                context=ssl.create_default_context(),
+            )
+        else:
+            client = smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20)
+        with client:
+            if settings.smtp_port != 465:
+                client.starttls(context=ssl.create_default_context())
+            if settings.smtp_user and settings.smtp_password:
+                client.login(settings.smtp_user, settings.smtp_password.get_secret_value())
+            client.send_message(message)
+
+    await asyncio.to_thread(send)
+    logger.info("Company invitation email sent", extra={"recipient_domain": email.rsplit("@", 1)[-1]})
+
+
 async def startup(ctx):
     configure_logging()
     logger.info("Worker starting up")
@@ -1003,6 +1064,7 @@ class WorkerSettings:
         categorize_transaction,
         generate_weekly_digest,
         deliver_weekly_digest,
+        send_company_invitation,
     ]
     cron_jobs = [
         cron(

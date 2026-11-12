@@ -1,6 +1,7 @@
 import { format, isValid, parseISO } from "date-fns";
 import { Check, Download, FileUp, ReceiptText, RotateCw, TriangleAlert } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "../../api/errors";
@@ -208,9 +209,9 @@ function InvoiceCard({ invoice, companyId, currency, canWrite }: {
   </Card>;
 }
 
-function InvoiceUploadForm({ companyId, canWrite }: { companyId: string; canWrite: boolean }) {
+function InvoiceUploadForm({ companyId, canWrite, initialFile }: { companyId: string; canWrite: boolean; initialFile: File | undefined }) {
   const fileInput = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(initialFile ?? null);
   const [direction, setDirection] = useState<InvoiceDirection>("purchase");
   const [fileError, setFileError] = useState("");
   const [uploadedName, setUploadedName] = useState("");
@@ -262,6 +263,7 @@ function InvoiceUploadForm({ companyId, canWrite }: { companyId: string; canWrit
         <label className="space-y-1.5 text-xs font-semibold text-muted sm:col-span-2" htmlFor="invoice-file">Invoice or receipt file
           <Input accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" id="invoice-file" onChange={(event) => selectFile(event.currentTarget.files?.[0] ?? null)} ref={fileInput} type="file" />
         </label>
+        {file && <p className="text-sm text-foreground-body sm:col-span-2">Selected file: {file.name}</p>}
         <p className="text-xs leading-5 text-muted sm:col-span-2">Supported file types: PDF, PNG, JPG/JPEG, and WebP. The purchase/sale direction is saved for review. Extraction may leave fields blank if they are unclear.</p>
         <div className="sm:col-span-2"><Button disabled={!file || Boolean(fileError) || upload.isPending} type="submit"><ReceiptText aria-hidden="true" className="size-4" />{upload.isPending ? "Uploading…" : "Upload document"}</Button></div>
       </form>
@@ -272,7 +274,7 @@ function InvoiceUploadForm({ companyId, canWrite }: { companyId: string; canWrit
   </Card>;
 }
 
-function CompanyInvoices({ companyId, currency, canWrite }: { companyId: string; currency: string | null; canWrite: boolean }) {
+function CompanyInvoices({ companyId, currency, canWrite, initialFile }: { companyId: string; currency: string | null; canWrite: boolean; initialFile: File | undefined }) {
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [directionFilter, setDirectionFilter] = useState<InvoiceDirection | "">("");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "">("");
@@ -294,7 +296,9 @@ function CompanyInvoices({ companyId, currency, canWrite }: { companyId: string;
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Upload a document, check the extracted details, and confirm the review when they are correct.</p>
     </div>
     <div className="flex items-start gap-3 rounded-lg border border-caution/40 bg-caution/20 p-4 text-sm leading-6 text-pine"><TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" /><p><strong>Invoices do not change cash flow.</strong> Confirming a document records that you reviewed it. Record money actually received or paid separately in Transactions.</p></div>
-    <InvoiceUploadForm canWrite={canWrite} companyId={companyId} />
+    <div id="upload" className="scroll-mt-24">
+      <InvoiceUploadForm canWrite={canWrite} companyId={companyId} initialFile={initialFile} />
+    </div>
     <Card className="overflow-hidden">
       <CardHeader className="border-b border-line">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle>Invoice review list</CardTitle><CardDescription className="mt-1">Newest documents first. Viewers can inspect and download; owners and accountants can upload, edit, and confirm.</CardDescription></div><Badge variant="neutral">{invoices.data ? `${allItems.length} loaded` : "Loading"}</Badge></div>
@@ -320,6 +324,8 @@ function CompanyInvoices({ companyId, currency, canWrite }: { companyId: string;
 
 export function InvoicesPage() {
   const company = useCompany();
-  const { canWrite } = useRole();
-  return <CompanyInvoices canWrite={canWrite} companyId={company.company_id} currency={company.currency_code} key={company.company_id} />;
+  const { canUploadInvoices, canReviewInvoices } = useRole();
+  const location = useLocation();
+  const initialFile = (location.state as { uploadFile?: File } | null)?.uploadFile;
+  return <CompanyInvoices canWrite={canUploadInvoices || canReviewInvoices} companyId={company.company_id} currency={company.currency_code} initialFile={initialFile} key={company.company_id} />;
 }
